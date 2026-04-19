@@ -1475,7 +1475,9 @@ function renderSplash(){
   ctx.font='8px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
   if(Math.floor(gameTime/500)%2===0) ctx.fillText('PRESS START',GW/2,GH-50);
   ctx.fillStyle='rgba(232,226,212,0.18)';ctx.font='4px "Press Start 2P",monospace';
-  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-14);
+  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-18);
+  ctx.fillStyle='rgba(232,226,212,0.25)';
+  ctx.fillText('BUILT BY PRAXIS',GW/2,GH-8);
   ctx.textAlign='left';ctx.restore();
 }
 
