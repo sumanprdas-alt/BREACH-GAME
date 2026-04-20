@@ -10,7 +10,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 .hint{margin-top:14px;font-size:9px;color:#888;letter-spacing:1px;text-align:center;line-height:1.9}
 .hint b{color:#3cc048}
 #loading{color:#3cc048;font-size:10px}
-.ode{margin-top:10px;font-size:7px;color:#555;letter-spacing:1.5px;text-align:center}
+.ode{margin-top:8px;font-size:4px;color:#444;letter-spacing:1px;text-align:center}
 </style>
 </head>
 <body>
@@ -1404,9 +1404,7 @@ function renderSplash(){
   ctx.font='8px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
   if(Math.floor(gameTime/500)%2===0) ctx.fillText('PRESS START',GW/2,GH-50);
   ctx.fillStyle='rgba(232,226,212,0.18)';ctx.font='4px "Press Start 2P",monospace';
-  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-18);
-  ctx.fillStyle='rgba(232,226,212,0.25)';
-  ctx.fillText('BUILT BY PRAXIS, AN ODE TO CONTRA AND OTHER RETRO GAMES',GW/2,GH-8);
+  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-14);
   ctx.textAlign='left';ctx.restore();
 }
 
