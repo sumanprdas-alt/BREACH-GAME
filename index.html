@@ -1395,16 +1395,23 @@ function drawScanlines(){ctx.fillStyle='rgba(0,0,0,0.12)';for(let y=0;y<GH;y+=3)
 // SCREEN 1: SPLASH
 function renderSplash(){
   ctx.save();ctx.scale(SCALE,SCALE);ctx.fillStyle='#0e0e10';ctx.fillRect(0,0,GW,GH);drawScanlines();
-  drawNESLogo(GW/2,GH/2-40,3);
+  // Logo — upper third
+  drawNESLogo(GW/2,72,3);
+  // Tagline — centered with breathing room
   ctx.textAlign='center';ctx.font='7px "Press Start 2P",monospace';ctx.fillStyle='#e6c84a';
-  ctx.fillText('THREE OPERATIVES. NO BACKUP.',GW/2,GH/2-2);
+  ctx.fillText('THREE OPERATIVES. NO BACKUP.',GW/2,130);
+  // Subtitle
   ctx.fillStyle='#8a3d38';ctx.font='5px "Press Start 2P",monospace';
-  ctx.fillText('BREAK THROUGH EVERYTHING',GW/2,GH/2+10);
-  ctx.fillStyle='rgba(232,226,212,0.25)';ctx.fillText('2 0 8 9',GW/2,GH/2+30);
+  ctx.fillText('BREAK THROUGH EVERYTHING',GW/2,152);
+  // Year
+  ctx.fillStyle='rgba(232,226,212,0.25)';ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillText('2 0 8 9',GW/2,182);
+  // Press Start — lower area
   ctx.font='8px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
-  if(Math.floor(gameTime/500)%2===0) ctx.fillText('PRESS START',GW/2,GH-50);
+  if(Math.floor(gameTime/500)%2===0) ctx.fillText('PRESS START',GW/2,230);
+  // Browser notice — bottom
   ctx.fillStyle='rgba(232,226,212,0.18)';ctx.font='4px "Press Start 2P",monospace';
-  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-14);
+  ctx.fillText('OPTIMISED FOR WEB BROWSERS \xb7 TRUE TO RETRO',GW/2,GH-10);
   ctx.textAlign='left';ctx.restore();
 }
 
