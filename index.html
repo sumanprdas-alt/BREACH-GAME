@@ -447,48 +447,38 @@ function initGame(){
   // 1UP
   crates.push({ x:2000-8, y:GROUND_Y-12, w:16, h:12, alive:true, weapon:'1UP', tex:tex.oneup });
 
-  // Fixed enemies — turrets on ground AND platforms, tanks
+  // Fixed enemies — ground turrets near platforms, tanks
   enemies = [];
   [
-    // Jungle zone — ground and platform turrets
-    {x:500, t:'turret'},                          // ground
-    {x:620, t:'turret', py:125},                  // ON high platform (y=125)
-    {x:850, t:'turret'},                          // ground
-    {x:940, t:'turret', py:145},                  // ON platform
-    {x:1100, t:'turret'},                         // ground
-    {x:1370, t:'turret', py:180},                 // ON low platform
-    {x:1520, t:'turret', py:140},                 // ON mid platform
-    {x:1800, t:'turret'},                         // ground
-    {x:1920, t:'turret', py:130},                 // ON platform - shoots down
-    {x:2220, t:'turret', py:110},                 // ON high platform
-    {x:2400, t:'turret'},                         // ground
-    {x:2700, t:'turret'},                         // ground
-    // Riverbank zone — heavier, more elevated
-    {x:2970, t:'turret', py:175},                 // ON platform
-    {x:3120, t:'turret', py:135},                 // ON high platform
-    {x:3300, t:'turret'},                         // ground
+    // Jungle zone — ground turrets spaced along the path
+    {x:500, t:'turret'},
+    {x:780, t:'turret'},
+    {x:1050, t:'turret'},
+    {x:1350, t:'turret'},
+    {x:1700, t:'turret'},
+    {x:2000, t:'turret'},
+    {x:2400, t:'turret'},
+    {x:2650, t:'turret'},
+    // Riverbank zone — heavier defenses
+    {x:2900, t:'turret'},
+    {x:3150, t:'turret'},
+    {x:3400, t:'turret'},
     {x:3500, t:'tank'},
-    {x:3570, t:'turret', py:120},                 // ON platform
-    {x:3700, t:'turret'},                         // ground
-    {x:3870, t:'turret', py:130},                 // ON platform
-    {x:4020, t:'turret', py:95},                  // ON highest platform!
-    {x:4300, t:'turret'},                         // ground
-    {x:4520, t:'turret', py:140},                 // ON platform
+    {x:3700, t:'turret'},
+    {x:3950, t:'turret'},
+    {x:4200, t:'turret'},
+    {x:4500, t:'turret'},
     // Fortress zone — maximum density
-    {x:4850, t:'turret'},
-    {x:4920, t:'turret', py:170},                 // ON platform
-    {x:5050, t:'tank'},
-    {x:5070, t:'turret', py:130},                 // ON platform
-    {x:5250, t:'turret'},
-    {x:5370, t:'turret', py:105},                 // ON high platform
-    {x:5520, t:'turret', py:145},                 // ON platform
-    {x:5650, t:'turret'},
-    {x:5870, t:'turret', py:130},                 // ON platform
+    {x:4800, t:'turret'},
+    {x:5000, t:'turret'},
+    {x:5100, t:'tank'},
+    {x:5300, t:'turret'},
+    {x:5500, t:'turret'},
+    {x:5700, t:'turret'},
+    {x:5900, t:'turret'},
   ].forEach(s => {
-    spawnFixedEnemy(s.x, s.t, s.py);
+    spawnFixedEnemy(s.x, s.t);
   });
-
-  sfx.startBGM();
 }
 
 function spawnFixedEnemy(x, type, platformY){
@@ -1249,9 +1239,9 @@ function render(){
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
     const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
-    // Prone: +18 Y offset, flip is INVERTED (raw sprite has head LEFT)
+    // Prone: +18 Y offset, same flip as standing
     const proneOffset = bill.isProne ? 18 : 0;
-    const flipX = bill.isProne ? (bill.facing > 0) : (bill.facing < 0);
+    const flipX = bill.facing < 0;
     drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,inv?'#fff':null);
     if(gameTime-bill.lastShotAt<60){
       const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
@@ -1262,18 +1252,24 @@ function render(){
   // Enemies
   enemies.forEach(e=>{if(!e.alive)return;const sx2=e.x-cx;if(sx2<-80||sx2>GW+80)return;
     if(e.type==='soldier'||e.type==='charger'||e.type==='sniper'){
-      if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x,sf=Math.floor(gameTime/300)%2;
-      const ES=1.3; // enemy scale to match player
+      if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x;
+      // Animate run: alternate frames when moving
+      const isMoving = Math.abs(e.vx) > 0.3;
+      const sf = isMoving ? Math.floor(gameTime/150)%2 : 0;
+      // Scale: wider and slightly taller for stocky look
+      const drawW = e.w * 1.15, drawH = e.h * 1.05;
       ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h);if(flipE)ctx.scale(-1,1);
-      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w*ES/2,-e.h*ES,e.w*ES,e.h*ES);
-      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w*ES/2+4,-e.h*ES+2,e.w*ES-8,5);}
-      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w*ES/2+4,-e.h*ES+2,e.w*ES-8,5);}
+      // Bob up/down when running
+      const runBob = isMoving ? Math.sin(gameTime*0.015)*2 : 0;
+      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-drawW/2,-drawH+runBob,drawW,drawH);
+      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-drawW/2+3,-drawH+2,drawW-6,4);}
+      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-drawW/2+3,-drawH+2,drawW-6,4);}
       ctx.restore();}
     else if(e.type==='turret'){if(!e.revealed)return;const isA=Math.abs(bill.x-e.x)<300,fr=isA?1:0;
       const tw=35,th=32,sc2=1.4,dw2=tw*sc2,dh2=th*sc2,dx=sx2+e.w/2-dw2/2,dy=e.y;
       ctx.save();if(!e.onPlatform){ctx.beginPath();ctx.rect(dx-5,0,dw2+10,GROUND_Y);ctx.clip();}
       ctx.drawImage(imgs.nes_turret,fr*tw,0,tw,th,dx,dy,dw2,dh2);ctx.restore();}
-    else if(e.type==='tank'){ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h/2);ctx.scale(2.2,2.2);
+    else if(e.type==='tank'){ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h/2);ctx.scale(1.8,1.8);
       ctx.drawImage(tex.tank,-20,-14);ctx.restore();}
   });
   // Player bullets + trails
@@ -1556,8 +1552,10 @@ function renderTitle(){
 }
 
 function updateTitle(){
-  sfx.resume();
-  if(!titleBgmStarted){sfx.startBGM();titleBgmStarted=true;}
+  if(justPressed('Enter')||justPressed('Space')||justPressed('ArrowUp')||justPressed('ArrowDown')||justPressed('ArrowLeft')||justPressed('ArrowRight')){
+    sfx.resume();
+    if(!titleBgmStarted){sfx.startBGM();titleBgmStarted=true;}
+  }
   switch(titlePhase){
     case 'splash':if(justPressed('Enter')||justPressed('Space'))titlePhase='menu';break;
     case 'menu':
