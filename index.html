@@ -10,6 +10,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 .hint{margin-top:14px;font-size:9px;color:#888;letter-spacing:1px;text-align:center;line-height:1.9}
 .hint b{color:#3cc048}
 #loading{color:#3cc048;font-size:10px}
+.ode{margin-top:10px;font-size:7px;color:#555;letter-spacing:1.5px;text-align:center}
 </style>
 </head>
 <body>
@@ -18,6 +19,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 <div class="hint">
 <b>ARROWS</b> MOVE / AIM &middot; <b>SPACE</b> JUMP &middot; <b>DOWN</b> PRONE &middot; <b>X</b> SHOOT &middot; <b>C</b> GRENADE &middot; <b>ENTER</b> ADVANCE
 </div>
+<div class="ode">BUILT BY PRAXIS, AN ODE TO CONTRA AND OTHER RETRO GAMES</div>
 <script>
 'use strict';
 
@@ -1333,9 +1335,6 @@ function render(){
   const zn=zone.name==='jungle'?'DEEP JUNGLE':zone.name==='riverbank'?'RIVERBANK':'FORTRESS';
   ctx.textAlign='center';ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='4px "Press Start 2P",monospace';
   ctx.fillText(zn,GW/2,10);
-  // Footer
-  ctx.fillStyle='rgba(232,226,212,0.12)';ctx.font='3px "Press Start 2P",monospace';
-  ctx.fillText('AN ODE TO CONTRA AND OTHER RETRO GAMES',GW/2,GH-1);
   ctx.textAlign='left';
   ctx.restore();
 }
