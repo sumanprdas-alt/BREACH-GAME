@@ -1249,7 +1249,10 @@ function render(){
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
     const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
-    drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2,bill.facing<0,inv?'#fff':null);
+    // Prone: +18 Y offset, flip is INVERTED (raw sprite has head LEFT)
+    const proneOffset = bill.isProne ? 18 : 0;
+    const flipX = bill.isProne ? (bill.facing > 0) : (bill.facing < 0);
+    drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,inv?'#fff':null);
     if(gameTime-bill.lastShotAt<60){
       const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
       ctx.globalAlpha=1-(gameTime-bill.lastShotAt)/60;
