@@ -207,7 +207,7 @@ canvas.width = CANVAS_W; canvas.height = CANVAS_H;
 // SPRITE DRAWING HELPERS
 // ═══════════════════════════════════════════════════════════════
 function drawBillFrame(frameIdx, x, y, flipX, tint){
-  const cols=14, cw=66, ch=66, CHAR_SCALE=1.3;
+  const cols=14, cw=66, ch=68, CHAR_SCALE=1.3;
   const dw=cw*CHAR_SCALE, dh=ch*CHAR_SCALE;
   const sc = frameIdx % cols, sr = Math.floor(frameIdx / cols);
   const sx=sc*cw, sy=sr*ch;
@@ -1263,16 +1263,17 @@ function render(){
   enemies.forEach(e=>{if(!e.alive)return;const sx2=e.x-cx;if(sx2<-80||sx2>GW+80)return;
     if(e.type==='soldier'||e.type==='charger'||e.type==='sniper'){
       if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x,sf=Math.floor(gameTime/300)%2;
+      const ES=1.3; // enemy scale to match player
       ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h);if(flipE)ctx.scale(-1,1);
-      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w/2,-e.h,e.w,e.h);
-      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
-      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
+      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w*ES/2,-e.h*ES,e.w*ES,e.h*ES);
+      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w*ES/2+4,-e.h*ES+2,e.w*ES-8,5);}
+      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w*ES/2+4,-e.h*ES+2,e.w*ES-8,5);}
       ctx.restore();}
     else if(e.type==='turret'){if(!e.revealed)return;const isA=Math.abs(bill.x-e.x)<300,fr=isA?1:0;
       const tw=35,th=32,sc2=1.4,dw2=tw*sc2,dh2=th*sc2,dx=sx2+e.w/2-dw2/2,dy=e.y;
       ctx.save();if(!e.onPlatform){ctx.beginPath();ctx.rect(dx-5,0,dw2+10,GROUND_Y);ctx.clip();}
       ctx.drawImage(imgs.nes_turret,fr*tw,0,tw,th,dx,dy,dw2,dh2);ctx.restore();}
-    else if(e.type==='tank'){ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h/2);ctx.scale(1.8,1.8);
+    else if(e.type==='tank'){ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h/2);ctx.scale(2.2,2.2);
       ctx.drawImage(tex.tank,-20,-14);ctx.restore();}
   });
   // Player bullets + trails
@@ -1447,7 +1448,7 @@ function renderCharSelect(){
     ctx.font='4px "Press Start 2P",monospace';ctx.fillStyle=sel?'rgba(232,226,212,0.7)':'rgba(232,226,212,0.3)';
     ctx.fillText(ch.title,px+pw/2,py+30);
     // Sprite preview
-    if(imgs.bill){const cw=66,ch2=66,fr=5,sc2=fr%14,sr=Math.floor(fr/14),ds=sel?50:38;
+    if(imgs.bill){const cw=66,ch2=68,fr=5,sc2=fr%14,sr=Math.floor(fr/14),ds=sel?50:38;
       try{ctx.drawImage(imgs.bill,sc2*cw,sr*ch2,cw,ch2,px+pw/2-ds/2,py+38,ds,ds*(ch2/cw));}catch(e){}}
     ctx.font='3.5px "Press Start 2P",monospace';ctx.fillStyle=sel?'rgba(232,226,212,0.6)':'rgba(232,226,212,0.25)';
     ctx.fillText(ch.desc,px+pw/2,py+108);
