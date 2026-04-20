@@ -453,14 +453,14 @@ function initGame(){
     // Jungle zone — ground turrets spaced along the path
     {x:500, t:'turret'},
     {x:780, t:'turret'},
-    {x:1050, t:'turret'},
+    {x:1150, t:'turret'},
     {x:1350, t:'turret'},
     {x:1700, t:'turret'},
     {x:2000, t:'turret'},
     {x:2400, t:'turret'},
-    {x:2650, t:'turret'},
+    {x:2750, t:'turret'},
     // Riverbank zone — heavier defenses
-    {x:2900, t:'turret'},
+    {x:3000, t:'turret'},
     {x:3150, t:'turret'},
     {x:3400, t:'turret'},
     {x:3500, t:'tank'},
@@ -474,7 +474,7 @@ function initGame(){
     {x:5100, t:'tank'},
     {x:5300, t:'turret'},
     {x:5500, t:'turret'},
-    {x:5700, t:'turret'},
+    {x:5770, t:'turret'},
     {x:5900, t:'turret'},
   ].forEach(s => {
     spawnFixedEnemy(s.x, s.t);
@@ -1239,9 +1239,9 @@ function render(){
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
     const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
-    // Prone: +18 Y offset, same flip as standing
+    // Prone: +18 Y offset. Prone frame has head LEFT in raw sprite, so flip is INVERTED
     const proneOffset = bill.isProne ? 18 : 0;
-    const flipX = bill.facing < 0;
+    const flipX = bill.isProne ? (bill.facing > 0) : (bill.facing < 0);
     drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,inv?'#fff':null);
     if(gameTime-bill.lastShotAt<60){
       const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
@@ -1253,17 +1253,13 @@ function render(){
   enemies.forEach(e=>{if(!e.alive)return;const sx2=e.x-cx;if(sx2<-80||sx2>GW+80)return;
     if(e.type==='soldier'||e.type==='charger'||e.type==='sniper'){
       if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x;
-      // Animate run: alternate frames when moving
       const isMoving = Math.abs(e.vx) > 0.3;
       const sf = isMoving ? Math.floor(gameTime/150)%2 : 0;
-      // Scale: wider and slightly taller for stocky look
-      const drawW = e.w * 1.15, drawH = e.h * 1.05;
+      const runBob = isMoving ? Math.sin(gameTime*0.015)*1.5 : 0;
       ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h);if(flipE)ctx.scale(-1,1);
-      // Bob up/down when running
-      const runBob = isMoving ? Math.sin(gameTime*0.015)*2 : 0;
-      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-drawW/2,-drawH+runBob,drawW,drawH);
-      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-drawW/2+3,-drawH+2,drawW-6,4);}
-      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-drawW/2+3,-drawH+2,drawW-6,4);}
+      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w/2,-e.h+runBob,e.w,e.h);
+      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
+      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
       ctx.restore();}
     else if(e.type==='turret'){if(!e.revealed)return;const isA=Math.abs(bill.x-e.x)<300,fr=isA?1:0;
       const tw=35,th=32,sc2=1.4,dw2=tw*sc2,dh2=th*sc2,dx=sx2+e.w/2-dw2/2,dy=e.y;
@@ -1552,12 +1548,14 @@ function renderTitle(){
 }
 
 function updateTitle(){
-  if(justPressed('Enter')||justPressed('Space')||justPressed('ArrowUp')||justPressed('ArrowDown')||justPressed('ArrowLeft')||justPressed('ArrowRight')){
-    sfx.resume();
-    if(!titleBgmStarted){sfx.startBGM();titleBgmStarted=true;}
-  }
   switch(titlePhase){
-    case 'splash':if(justPressed('Enter')||justPressed('Space'))titlePhase='menu';break;
+    case 'splash':
+      if(justPressed('Enter')||justPressed('Space')){
+        sfx.resume();
+        if(!titleBgmStarted){sfx.startBGM();titleBgmStarted=true;}
+        titlePhase='menu';
+      }
+      break;
     case 'menu':
       if(justPressed('ArrowUp'))menuSel=Math.max(0,menuSel-1);
       if(justPressed('ArrowDown'))menuSel=Math.min(2,menuSel+1);
