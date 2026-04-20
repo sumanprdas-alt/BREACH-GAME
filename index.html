@@ -46,7 +46,7 @@ const LEVEL_W = 6400, GROUND_Y = 216;
 const BRIDGE_X = 3200, BRIDGE_W = 200;
 const FORTRESS_X = 6100;
 const GRAVITY = 0.6, MAX_FALL = 10;
-const BILL_SPEED = 1.6, JUMP_POWER = -7.2;
+const BILL_SPEED = 2.0, JUMP_POWER = -7.5;
 const BULLET_SPEED = 7;
 const ENEMY_SPEED = 1.2, ENEMY_BULLET_SPEED = 2.5;
 const WAVE_INTERVAL = 2200;
@@ -1235,7 +1235,7 @@ function render(){
   crates.forEach(c=>{if(c.alive)ctx.drawImage(tex.crate,c.x-cx,c.y);});
   // Pickups
   pickups.forEach(p=>{if(!p.alive)return;ctx.fillStyle='#fcd848';ctx.fillRect(p.x-cx,p.y,p.w,p.h);
-    ctx.fillStyle='#000';ctx.font='8px monospace';ctx.fillText(p.letter,p.x-cx+2,p.y+10);});
+    ctx.fillStyle='#000';ctx.font='8px monospace';ctx.fillText(p.weapon,p.x-cx+2,p.y+10);});
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
     const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
@@ -1332,7 +1332,11 @@ function render(){
   ctx.textAlign='right';ctx.fillStyle='#e6c84a';ctx.fillText('SCORE:'+score,GW-6,10);
   const zn=zone.name==='jungle'?'DEEP JUNGLE':zone.name==='riverbank'?'RIVERBANK':'FORTRESS';
   ctx.textAlign='center';ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='4px "Press Start 2P",monospace';
-  ctx.fillText(zn,GW/2,10);ctx.textAlign='left';
+  ctx.fillText(zn,GW/2,10);
+  // Footer
+  ctx.fillStyle='rgba(232,226,212,0.12)';ctx.font='3px "Press Start 2P",monospace';
+  ctx.fillText('AN ODE TO CONTRA AND OTHER RETRO GAMES',GW/2,GH-3);
+  ctx.textAlign='left';
   ctx.restore();
 }
 
