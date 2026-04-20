@@ -1239,9 +1239,9 @@ function render(){
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
     const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
-    // Prone: +18 Y offset. Prone frame has head LEFT in raw sprite, so flip is INVERTED
+    // Prone: +18 Y offset. Same flip as standing (raw sprite faces RIGHT)
     const proneOffset = bill.isProne ? 18 : 0;
-    const flipX = bill.isProne ? (bill.facing > 0) : (bill.facing < 0);
+    const flipX = bill.facing < 0;
     drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,inv?'#fff':null);
     if(gameTime-bill.lastShotAt<60){
       const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
@@ -1254,10 +1254,9 @@ function render(){
     if(e.type==='soldier'||e.type==='charger'||e.type==='sniper'){
       if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x;
       const isMoving = Math.abs(e.vx) > 0.3;
-      const sf = isMoving ? Math.floor(gameTime/150)%2 : 0;
-      const runBob = isMoving ? Math.sin(gameTime*0.015)*1.5 : 0;
+      const sf = isMoving ? Math.floor(gameTime/100)%2 : 0;
       ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h);if(flipE)ctx.scale(-1,1);
-      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w/2,-e.h+runBob,e.w,e.h);
+      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w/2,-e.h,e.w,e.h);
       if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
       else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
       ctx.restore();}
