@@ -207,13 +207,15 @@ canvas.width = CANVAS_W; canvas.height = CANVAS_H;
 // SPRITE DRAWING HELPERS
 // ═══════════════════════════════════════════════════════════════
 function drawBillFrame(frameIdx, x, y, flipX, tint){
-  const cols=14, cw=66, ch=66;
+  const cols=14, cw=66, ch=66, CHAR_SCALE=1.3;
+  const dw=cw*CHAR_SCALE, dh=ch*CHAR_SCALE;
   const sc = frameIdx % cols, sr = Math.floor(frameIdx / cols);
   const sx=sc*cw, sy=sr*ch;
   ctx.save();
   ctx.translate(Math.round(x), Math.round(y));
   if(flipX){ ctx.scale(-1,1); }
-  ctx.drawImage(imgs.bill, sx, sy, cw, ch, -cw/2, -ch/2, cw, ch);
+  if(tint){ctx.globalAlpha=0.5;ctx.fillStyle=tint;ctx.fillRect(-dw/2,-dh/2,dw,dh);ctx.globalAlpha=1;}
+  ctx.drawImage(imgs.bill, sx, sy, cw, ch, -dw/2, -dh/2, dw, dh);
   ctx.restore();
 }
 
@@ -326,6 +328,54 @@ function createTextures(){
     g.fillRect(8,4,1,4); g.fillRect(9,4,1,1); g.fillRect(9,7,1,1);
     g.fillRect(11,4,1,4); g.fillRect(12,4,1,2);
   });
+  // Muzzle flash
+  tex.muzzle = makeTexture(12,12,g=>{
+    g.fillStyle='#fff'; g.beginPath(); g.arc(6,6,6,0,7); g.fill();
+    g.fillStyle='#fcd848'; g.beginPath(); g.arc(6,6,4,0,7); g.fill();
+    g.fillStyle='#fc8030'; g.beginPath(); g.arc(6,6,2,0,7); g.fill();
+  });
+  // Parallax: volcano silhouettes
+  tex.volcano = makeTexture(512,80,g=>{
+    g.fillStyle='#0a1a12';
+    g.beginPath(); g.moveTo(0,80);
+    g.lineTo(0,55);g.lineTo(30,40);g.lineTo(60,50);g.lineTo(100,22);g.lineTo(130,35);g.lineTo(160,28);
+    g.lineTo(200,45);g.lineTo(240,15);g.lineTo(270,30);g.lineTo(310,42);g.lineTo(340,20);
+    g.lineTo(370,38);g.lineTo(400,50);g.lineTo(430,30);g.lineTo(460,45);g.lineTo(490,35);
+    g.lineTo(512,42);g.lineTo(512,80);g.closePath();g.fill();
+    g.fillStyle='rgba(200,60,30,0.15)';g.beginPath();g.arc(240,15,12,0,7);g.fill();
+  });
+  // Parallax: treeline
+  tex.treeline = makeTexture(512,60,g=>{
+    g.fillStyle='#0c2210';
+    for(let x=0;x<512;x+=18){
+      const h=25+Math.sin(x*0.07)*12+Math.sin(x*0.13)*8;
+      g.beginPath();g.arc(x+9,60-h+10,12+Math.sin(x*0.2)*4,0,Math.PI*2);g.fill();
+      g.beginPath();g.arc(x+4,60-h+16,8+Math.sin(x*0.3)*3,0,Math.PI*2);g.fill();
+    }
+    g.fillRect(0,40,512,20);
+  });
+  // Continuous rock texture
+  tex.rockBig = makeTexture(256,128,g=>{
+    g.fillStyle='#3a4828';g.fillRect(0,0,256,128);
+    for(let y=0;y<128;y+=8){
+      const r=40+Math.sin(y*0.3)*15,gr=60+Math.sin(y*0.4)*20,b=30+Math.sin(y*0.5)*10;
+      g.fillStyle='rgba('+Math.floor(r)+','+Math.floor(gr)+','+Math.floor(b)+',0.4)';g.fillRect(0,y,256,6);
+    }
+    for(let i=0;i<300;i++){const rx=Math.random()*256,ry=Math.random()*128,sh=Math.floor(Math.random()*40+20);
+      g.fillStyle='rgba('+sh+','+(sh+20)+','+sh+',0.3)';g.fillRect(rx,ry,Math.random()*6+1,Math.random()*3+1);}
+    g.strokeStyle='rgba(10,15,5,0.4)';g.lineWidth=1;
+    for(let i=0;i<8;i++){g.beginPath();let x=Math.random()*256,y=Math.random()*128;g.moveTo(x,y);
+      for(let j=0;j<5;j++){x+=Math.random()*30-15;y+=Math.random()*20;g.lineTo(x,y);}g.stroke();}
+  });
+  // Environmental props
+  tex.barbedWire=makeTexture(40,12,g=>{g.strokeStyle='#606058';g.lineWidth=1;g.beginPath();g.moveTo(0,6);
+    for(let x=0;x<40;x+=6){g.lineTo(x+3,3);g.lineTo(x+6,6);}g.stroke();});
+  tex.warningSign=makeTexture(14,18,g=>{g.fillStyle='#c0a030';g.fillRect(6,0,2,8);g.fillRect(0,8,14,10);
+    g.fillStyle='#000';g.fillRect(1,9,12,8);g.fillStyle='#c0a030';g.fillRect(5,10,4,5);g.fillRect(6,16,2,1);});
+  tex.antenna=makeTexture(6,32,g=>{g.fillStyle='#505058';g.fillRect(2,0,2,32);g.fillStyle='#808088';g.fillRect(1,0,4,2);
+    g.fillStyle='#ff3030';g.beginPath();g.arc(3,1,1.5,0,7);g.fill();g.fillStyle='#404048';g.fillRect(0,8,6,1);g.fillRect(0,16,6,1);});
+  tex.fallenTree=makeTexture(60,10,g=>{g.fillStyle='#3a2a18';g.fillRect(0,3,60,5);g.fillStyle='#4a3a28';g.fillRect(0,3,60,2);
+    g.fillStyle='#2a4a1a';g.fillRect(45,0,12,4);g.fillRect(15,6,10,4);});
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1124,323 +1174,173 @@ function updateCamera(){
 function render(){
   ctx.save();
   ctx.scale(SCALE, SCALE);
-
-  // Screen shake during fortress explosion
-  if(screenShake > 0){
-    const intensity = Math.min(6, screenShake/300);
-    ctx.translate(Math.sin(gameTime*0.09)*intensity, Math.cos(gameTime*0.07)*intensity*0.6);
+  if(screenShake>0){const i=Math.min(6,screenShake/300);ctx.translate(Math.sin(gameTime*0.09)*i,Math.cos(gameTime*0.07)*i*0.6);}
+  const cx=Math.round(camera.x);
+  // Zone tint
+  const zone=ZONES.find(z=>bill.x>=z.start&&bill.x<z.end)||ZONES[2];
+  let tintColor='rgba(0,30,10,0.12)';
+  if(zone.name==='riverbank')tintColor='rgba(0,20,30,0.15)';
+  if(zone.name==='fortress')tintColor='rgba(30,10,10,0.18)';
+  // Sky gradient
+  const skyGrd=ctx.createLinearGradient(0,0,0,GROUND_Y);
+  skyGrd.addColorStop(0,'#020810');skyGrd.addColorStop(0.4,'#061018');skyGrd.addColorStop(1,'#0a1810');
+  ctx.fillStyle=skyGrd;ctx.fillRect(0,0,GW,GH);
+  // Stars
+  ctx.fillStyle='rgba(200,200,180,0.12)';
+  for(let i=0;i<20;i++){ctx.fillRect((i*137+23)%GW,(i*73+11)%(GROUND_Y/3),1,1);}
+  // Parallax 1: volcanoes (0.08x)
+  let vo=cx*0.08;ctx.globalAlpha=0.6;
+  for(let x=-((vo%512)+512);x<GW+512;x+=512)ctx.drawImage(tex.volcano,x,GROUND_Y-140);
+  ctx.globalAlpha=1;
+  // Parallax 2: treeline (0.25x)
+  let to=cx*0.25;ctx.globalAlpha=0.45;
+  for(let x=-((to%512)+512);x<GW+512;x+=512)ctx.drawImage(tex.treeline,x,GROUND_Y-80);
+  ctx.globalAlpha=1;
+  // Parallax 3: jungle tiles (0.4x, dimmed)
+  const bgOff=cx*0.4;ctx.globalAlpha=0.25;
+  for(let x=-((bgOff%64)+64);x<GW+64;x+=64)for(let y=GROUND_Y-100;y<GROUND_Y;y+=14)ctx.drawImage(imgs.tiles,32,0,64,14,x,y,64,14);
+  ctx.globalAlpha=1;
+  // Ground: continuous rock
+  const st=Math.floor(cx/256)*256;
+  for(let wx=st-256;wx<cx+GW+256;wx+=256)ctx.drawImage(tex.rockBig,wx-cx,GROUND_Y+6,256,128);
+  // Grass fringe on ground
+  for(let wx=Math.floor(cx/4)*4;wx<cx+GW+4;wx+=4){
+    const sx2=wx-cx,ob=wx>=BRIDGE_X&&wx<BRIDGE_X+BRIDGE_W;
+    if(!ob){const gh=8+Math.sin(wx*0.15)*2+Math.sin(wx*0.4)*1;
+      ctx.fillStyle='#184818';ctx.fillRect(sx2,GROUND_Y-gh+6,4,gh);
+      ctx.fillStyle='#38a038';ctx.fillRect(sx2,GROUND_Y-gh+9,4,gh-3);
+      ctx.fillStyle='#88d048';ctx.fillRect(sx2,GROUND_Y-gh+11,4,Math.max(1,gh-5));}
   }
-
-  const cx = Math.round(camera.x);
-
-  // Sky/background
-  ctx.fillStyle = '#001010';
-  ctx.fillRect(0, 0, GW, GH);
-
-  // Jungle wall background (parallax)
-  const bgOffset = cx * 0.3;
-  for(let x=-((bgOffset%64)+64); x<GW+64; x+=64){
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 0, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 14, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 28, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 42, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 56, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 70, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 84, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 98, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 112, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 126, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 140, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 154, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 168, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 182, 64, 14);
-    ctx.drawImage(imgs.tiles, 32, 0, 64, 14, x, 196, 64, 14);
+  // Bridge water
+  if(cx<BRIDGE_X+BRIDGE_W&&cx+GW>BRIDGE_X){
+    const bsx=Math.max(0,BRIDGE_X-cx),bex=Math.min(GW,BRIDGE_X+BRIDGE_W-cx);
+    ctx.fillStyle='#1858e0';ctx.fillRect(bsx,GROUND_Y+10,bex-bsx,GH-GROUND_Y);
+    ctx.fillStyle='#88c8fc';ctx.fillRect(bsx,GROUND_Y+8,bex-bsx,2);
   }
-
-  // Ground tiles
-  const startTile = Math.floor(cx/16)*16;
-  for(let wx=startTile; wx<cx+GW+16; wx+=16){
-    const sx = wx - cx;
-    const overBridge = wx>=BRIDGE_X && wx<BRIDGE_X+BRIDGE_W;
-    if(!overBridge){
-      // Grass
-      ctx.drawImage(imgs.tiles, TILE.grass.x,TILE.grass.y,16,16, sx,GROUND_Y-4,16,16);
-      // Rock below
-      for(let ry=GROUND_Y+12; ry<GH+16; ry+=16){
-        ctx.drawImage(imgs.tiles, TILE.rock.x,TILE.rock.y,16,16, sx,ry,16,16);
-      }
-    } else {
-      // Water
-      ctx.fillStyle='#1858e0';
-      ctx.fillRect(sx, GROUND_Y+10, 16, GH-GROUND_Y);
-      ctx.fillStyle='#88c8fc';
-      ctx.fillRect(sx, GROUND_Y+8, 16, 2);
-    }
-  }
-
-  // Bridge planks
-  bridgePlanks.forEach(p => {
-    if(!p.alive) return;
-    ctx.drawImage(tex.plank, p.x-cx, p.y);
-  });
-
-  // Platforms
-  platforms.forEach(p => {
-    for(let px=p.x; px<p.x+p.w; px+=16){
-      const sx = px - cx;
-      if(sx > -16 && sx < GW+16){
-        ctx.drawImage(imgs.tiles, TILE.grass.x,TILE.grass.y,16,16, sx,p.y-6,16,16);
-        ctx.drawImage(imgs.tiles, TILE.rock.x,TILE.rock.y,16,16, sx,p.y+8,16,16);
-      }
+  bridgePlanks.forEach(p=>{if(p.alive)ctx.drawImage(tex.plank,p.x-cx,p.y);});
+  // Platforms: mossy stone with grass
+  platforms.forEach(p=>{
+    const ps=p.x-cx;if(ps>-p.w-16&&ps<GW+16){
+      ctx.fillStyle='#3a4030';ctx.fillRect(ps,p.y,p.w,16);
+      ctx.fillStyle='#4a5040';ctx.fillRect(ps,p.y,p.w,3);
+      ctx.fillStyle='#2a3020';ctx.fillRect(ps,p.y+13,p.w,3);
+      for(let mx=0;mx<p.w;mx+=7){ctx.fillStyle='#2a4a1a';ctx.fillRect(ps+mx,p.y+5,4,2);}
+      for(let gx=0;gx<p.w;gx+=3){const gh=5+Math.sin((p.x+gx)*0.3)*2;
+        ctx.fillStyle='#184818';ctx.fillRect(ps+gx,p.y-gh+2,3,gh);
+        ctx.fillStyle='#38a038';ctx.fillRect(ps+gx,p.y-gh+4,3,gh-2);
+        ctx.fillStyle='#68c038';ctx.fillRect(ps+gx,p.y-gh+5,3,Math.max(1,gh-4));}
     }
   });
-
+  // Environmental props
+  const props=[{x:400,t:'w'},{x:900,t:'s'},{x:1500,t:'a'},{x:1800,t:'f'},
+    {x:2300,t:'w'},{x:2800,t:'s'},{x:3200,t:'a'},{x:3600,t:'f'},
+    {x:4100,t:'w'},{x:4500,t:'s'},{x:5000,t:'a'},{x:5400,t:'w'},{x:5800,t:'f'},{x:6100,t:'s'}];
+  props.forEach(pr=>{const px=pr.x-cx;if(px>-60&&px<GW+60){ctx.globalAlpha=0.45;
+    if(pr.t==='w')ctx.drawImage(tex.barbedWire,px,GROUND_Y-14);
+    if(pr.t==='s')ctx.drawImage(tex.warningSign,px,GROUND_Y-18);
+    if(pr.t==='a')ctx.drawImage(tex.antenna,px,GROUND_Y-32);
+    if(pr.t==='f')ctx.drawImage(tex.fallenTree,px,GROUND_Y-6);
+    ctx.globalAlpha=1;}});
   // Crates
-  crates.forEach(c => {
-    if(!c.alive) return;
-    ctx.drawImage(c.tex, c.x-cx, c.y);
-  });
-
+  crates.forEach(c=>{if(c.alive)ctx.drawImage(tex.crate,c.x-cx,c.y);});
   // Pickups
-  pickups.forEach(p => {
-    ctx.drawImage(imgs.pickups, 0,0,24,16, p.x-cx, p.y, 24,16);
-  });
-
+  pickups.forEach(p=>{if(!p.alive)return;ctx.fillStyle='#fcd848';ctx.fillRect(p.x-cx,p.y,p.w,p.h);
+    ctx.fillStyle='#000';ctx.font='8px monospace';ctx.fillText(p.letter,p.x-cx+2,p.y+10);});
+  // Player + muzzle flash
+  if(!bill.isDying||Math.floor(gameTime/80)%2===0){
+    const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
+    drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2,bill.facing<0,inv?'#fff':null);
+    if(gameTime-bill.lastShotAt<60){
+      const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
+      ctx.globalAlpha=1-(gameTime-bill.lastShotAt)/60;
+      const ms=0.6+Math.random()*0.4;
+      ctx.drawImage(tex.muzzle,mfx-6*ms,mfy-6*ms,12*ms,12*ms);ctx.globalAlpha=1;}
+  }
   // Enemies
-  enemies.forEach(e => {
-    if(!e.alive) return;
-    const sx = e.x - cx;
-    if(sx < -50 || sx > GW+50) return;
-    if(e.type==='soldier' || e.type==='charger' || e.type==='sniper'){
-        // grunt_sheet: 2 frames of 36x40, proper NES Contra soldier sprites
-        const sf = (e.type==='sniper') ? 0 : Math.floor(gameTime/150) % 2;
-        const flipE = (bill.x < e.x);
-        const sw = 36, sh = 40;
-        ctx.save();
-        ctx.translate(sx + e.w/2, e.y + e.h);
-        if(flipE) ctx.scale(-1,1);
-        ctx.drawImage(imgs.grunt, sf*sw, 0, sw, sh, -e.w/2, -e.h, e.w, e.h);
-        // Charger: red band on head, Sniper: yellow band on head
-        if(e.type==='charger'){
-          ctx.fillStyle='#e03030';
-          ctx.fillRect(-e.w/2+4, -e.h+2, e.w-8, 4);
-        } else if(e.type==='sniper'){
-          ctx.fillStyle='#e0c030';
-          ctx.fillRect(-e.w/2+4, -e.h+2, e.w-8, 4);
-        }
-        ctx.restore();
-      }
-    else if(e.type==='turret'){
-        if(!e.revealed) return;
-        const isAggro = Math.abs(bill.x - e.x) < 300;
-        const frame = isAggro ? 1 : 0;
-        const tw = 35, th = 32, scale = 1.4;
-        const dw = tw * scale, dh = th * scale;
-        const drawX = sx + e.w/2 - dw/2;
-        const drawY = e.y;
-        ctx.save();
-        if(!e.onPlatform){
-          // Ground turrets: clip to above ground during pop-up
-          ctx.beginPath();
-          ctx.rect(drawX - 5, 0, dw + 10, GROUND_Y);
-          ctx.clip();
-        }
-        ctx.drawImage(imgs.nes_turret, frame*tw, 0, tw, th, drawX, drawY, dw, dh);
-        ctx.restore();
-      }
-    else if(e.type==='tank'){
-        ctx.drawImage(tex.tank, 0, 0, 40, 28, sx, e.y, 80, 56);
-      }
+  enemies.forEach(e=>{if(!e.alive)return;const sx2=e.x-cx;if(sx2<-80||sx2>GW+80)return;
+    if(e.type==='soldier'||e.type==='charger'||e.type==='sniper'){
+      if(!imgs.grunt)return;const sw=36,sh=40,flipE=bill.x<e.x,sf=Math.floor(gameTime/300)%2;
+      ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h);if(flipE)ctx.scale(-1,1);
+      ctx.drawImage(imgs.grunt,sf*sw,0,sw,sh,-e.w/2,-e.h,e.w,e.h);
+      if(e.type==='charger'){ctx.fillStyle='#e03030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
+      else if(e.type==='sniper'){ctx.fillStyle='#e0c030';ctx.fillRect(-e.w/2+4,-e.h+2,e.w-8,4);}
+      ctx.restore();}
+    else if(e.type==='turret'){if(!e.revealed)return;const isA=Math.abs(bill.x-e.x)<300,fr=isA?1:0;
+      const tw=35,th=32,sc2=1.4,dw2=tw*sc2,dh2=th*sc2,dx=sx2+e.w/2-dw2/2,dy=e.y;
+      ctx.save();if(!e.onPlatform){ctx.beginPath();ctx.rect(dx-5,0,dw2+10,GROUND_Y);ctx.clip();}
+      ctx.drawImage(imgs.nes_turret,fr*tw,0,tw,th,dx,dy,dw2,dh2);ctx.restore();}
+    else if(e.type==='tank'){ctx.save();ctx.translate(sx2+e.w/2,e.y+e.h/2);ctx.scale(1.8,1.8);
+      ctx.drawImage(tex.tank,-20,-14);ctx.restore();}
   });
-
-  // Bill
-  if(!bill.isDying || Math.floor(gameTime/100)%2===0){
-    // The KEY prone fix: when prone, draw the sprite lower so it sits ON the ground
-    // Frame 31 content bottom is at cell y=42, but idle feet are at cell y=60
-    // Difference = 18px. We shift the draw position down by 18px when prone.
-    let drawY = bill.y + bill.h/2; // center of hitbox
-    let drawX = bill.x + bill.w/2;
-    if(bill.isProne){
-      drawY += 18; // shift visual down so prone sprite sits on ground
-    }
-    // Invulnerability blink
-    if(gameTime < bill.invulnUntil && Math.floor(gameTime/80)%2===0){
-      ctx.globalAlpha = 0.3;
-    }
-    drawBillFrame(bill.frame, drawX - cx, drawY, bill.facing < 0);
-    ctx.globalAlpha = 1;
-  }
-
-  // Bullets
-  bullets.forEach(bl => {
-    if(bl.isGrenade) ctx.drawImage(tex.grenade, bl.x-cx, bl.y);
-    else ctx.drawImage(tex.bullet, bl.x-cx, bl.y);
-  });
-
+  // Player bullets + trails
+  bullets.forEach(bl=>{const bsx=bl.x-cx;if(bl.isGrenade){ctx.drawImage(tex.grenade,bsx,bl.y);}
+    else{ctx.strokeStyle='rgba(252,252,48,0.3)';ctx.lineWidth=1;ctx.beginPath();
+      ctx.moveTo(bsx,bl.y+bl.h/2);ctx.lineTo(bsx-bl.vx*3,bl.y+bl.h/2-bl.vy*3);ctx.stroke();
+      ctx.drawImage(tex.bullet,bsx,bl.y);}});
   // Enemy bullets
-  enemyBullets.forEach(bl => {
-    ctx.drawImage(tex.bulletRed, bl.x-cx, bl.y);
-  });
-
-  // Fortress
-  if(cx + GW > FORTRESS_X - 100){
-    const fx = FORTRESS_X - cx;
-    // Wall segments
-    for(let fy=GROUND_Y-96*3; fy<GROUND_Y; fy+=96){
-      ctx.drawImage(tex.fortWall, fx+20, fy);
-      ctx.drawImage(tex.fortWall, fx+44, fy);
-    }
-    // Defense wall sprite — massive destruction sequence after boss defeat
-    if(!bossDefeated || (fortressExploding && gameTime - victoryTimer < 3000)){
-      const t = fortressExploding ? gameTime - victoryTimer : 0;
-      // Wall shake intensifies over time
-      const shakeAmt = fortressExploding ? Math.min(8, t/200) : 0;
-      const shake = fortressExploding ? Math.sin(gameTime*0.08)*shakeAmt : 0;
-      const shakeY = fortressExploding ? Math.cos(gameTime*0.06)*shakeAmt*0.5 : 0;
-      // Wall fades and crumbles
-      ctx.globalAlpha = fortressExploding ? Math.max(0, 1 - t/3000) : 1;
-      // Draw wall fragments breaking apart
-      if(fortressExploding && t > 1500){
-        // Wall splits into chunks falling down
-        const fall = (t-1500)*0.003;
-        for(let chunk=0; chunk<4; chunk++){
-          ctx.save();
-          const cx2 = fx+10 + chunk*28 + (chunk-1.5)*fall*8;
-          const cy2 = GROUND_Y-196 + chunk*49 + fall*fall*30;
-          const rot = (chunk-1.5)*fall*0.3;
-          ctx.translate(cx2+14, cy2+24);
-          ctx.rotate(rot);
-          ctx.globalAlpha = Math.max(0, 1 - t/3000);
-          ctx.drawImage(imgs.defense_wall, chunk*56, 0, 56, 49, -14, -24, 56, 49);
-          ctx.restore();
-        }
-      } else {
-        ctx.drawImage(imgs.defense_wall, fx+10+shake, GROUND_Y-196+shakeY);
-      }
-      ctx.globalAlpha = 1;
-      // Massive explosion cascade during destruction
-      if(fortressExploding){
-        for(let i=0; i<10; i++){
-          const start = i*250;
-          if(t > start && t < start+600){
-            const ex = fx+10+Math.sin(i*7.3)*50+56;
-            const ey = GROUND_Y-196+Math.cos(i*4.7)*90+98;
-            const progress = (t-start)/600;
-            const s = 1+progress*3.5;
-            ctx.globalAlpha = Math.max(0, 1-progress*progress);
-            ctx.drawImage(tex.boom, ex-16*s, ey-16*s, 32*s, 32*s);
-            // Extra flash
-            if(progress < 0.3){
-              ctx.fillStyle='rgba(255,200,50,'+(0.4-progress)+')';
-              ctx.fillRect(ex-20*s, ey-20*s, 40*s, 40*s);
-            }
-            ctx.globalAlpha = 1;
-          }
-        }
-        // Debris particles falling
-        if(t > 500){
-          ctx.fillStyle='#8a7a6a';
-          for(let d=0; d<15; d++){
-            const dt2 = t - 500 - d*100;
-            if(dt2 > 0 && dt2 < 2000){
-              const dx = fx+20+Math.sin(d*13.7)*60;
-              const dy = GROUND_Y-180+Math.cos(d*9.3)*60 + dt2*dt2*0.0004;
-              const sz = 2+Math.random()*3;
-              if(dy < GROUND_Y) ctx.fillRect(dx, dy, sz, sz);
-            }
-          }
-        }
+  enemyBullets.forEach(bl=>{ctx.drawImage(bl.w>6?tex.bulletFat:tex.bulletRed,bl.x-cx,bl.y);});
+  // Fortress (keep existing)
+  if(cx+GW>FORTRESS_X-100){
+    const fx=FORTRESS_X-cx;
+    for(let fy=GROUND_Y-96*3;fy<GROUND_Y;fy+=96){ctx.drawImage(tex.fortWall,fx+20,fy);ctx.drawImage(tex.fortWall,fx+44,fy);}
+    if(!bossDefeated||(fortressExploding&&gameTime-victoryTimer<3000)){
+      const t=fortressExploding?gameTime-victoryTimer:0;
+      const sa=fortressExploding?Math.min(8,t/200):0;
+      const sh2=fortressExploding?Math.sin(gameTime*0.08)*sa:0;
+      const sy=fortressExploding?Math.cos(gameTime*0.06)*sa*0.5:0;
+      ctx.globalAlpha=fortressExploding?Math.max(0,1-t/3000):1;
+      if(fortressExploding&&t>1500){const fall=(t-1500)*0.003;
+        for(let ch2=0;ch2<4;ch2++){ctx.save();const cx2=fx+10+ch2*28+(ch2-1.5)*fall*8;
+          const cy2=GROUND_Y-196+ch2*49+fall*fall*30;ctx.translate(cx2+14,cy2+24);ctx.rotate((ch2-1.5)*fall*0.3);
+          ctx.globalAlpha=Math.max(0,1-t/3000);ctx.drawImage(imgs.defense_wall,ch2*56,0,56,49,-14,-24,56,49);ctx.restore();}
+      }else{ctx.drawImage(imgs.defense_wall,fx+10+sh2,GROUND_Y-196+sy);}
+      ctx.globalAlpha=1;
+      if(fortressExploding){for(let i=0;i<10;i++){const st2=i*250;if(t>st2&&t<st2+600){
+        const ex=fx+10+Math.sin(i*7.3)*50+56,ey=GROUND_Y-196+Math.cos(i*4.7)*90+98,pr=(t-st2)/600,s=1+pr*3.5;
+        ctx.globalAlpha=Math.max(0,1-pr*pr);ctx.drawImage(tex.boom,ex-16*s,ey-16*s,32*s,32*s);
+        if(pr<0.3){ctx.fillStyle='rgba(255,200,50,'+(0.4-pr)+')';ctx.fillRect(ex-20*s,ey-20*s,40*s,40*s);}
+        ctx.globalAlpha=1;}}
+        if(t>500){ctx.fillStyle='#8a7a6a';for(let d=0;d<15;d++){const dt2=t-500-d*100;
+          if(dt2>0&&dt2<2000){const dx=fx+20+Math.sin(d*13.7)*60,dy=GROUND_Y-180+Math.cos(d*9.3)*60+dt2*dt2*0.0004;
+          if(dy<GROUND_Y)ctx.fillRect(dx,dy,2+Math.random()*3,2+Math.random()*3);}}}
       }
     }
-    // Cannons
-    cannons.forEach(c => {
-      if(!c.alive) return;
-      ctx.drawImage(tex.cannon, c.x-cx-14, c.y-8);
-    });
-    // Core
-    if(coreExposed){
-      const pulse = 1 + Math.sin(gameTime*0.01)*0.3;
-      ctx.save();
-      ctx.translate(FORTRESS_X+45-cx, GROUND_Y-110);
-      ctx.scale(pulse, pulse);
-      ctx.drawImage(tex.fortCore, -16, -16);
-      ctx.restore();
-    }
+    cannons.forEach(c=>{if(c.alive)ctx.drawImage(tex.cannon,c.x-cx-14,c.y-8);});
+    if(coreExposed){const pu=1+Math.sin(gameTime*0.01)*0.3;ctx.save();
+      ctx.translate(FORTRESS_X+45-cx,GROUND_Y-110);ctx.scale(pu,pu);ctx.drawImage(tex.fortCore,-16,-16);ctx.restore();}
   }
-
+  // Fern fringe at top
+  const fo=cx*0.6;ctx.globalAlpha=0.3;
+  for(let fx2=-(fo%40+40);fx2<GW+40;fx2+=20){const fh=12+Math.sin((fx2+fo)*0.08)*6;
+    ctx.fillStyle='#1a3a10';ctx.beginPath();ctx.moveTo(fx2,0);ctx.lineTo(fx2+10,fh);ctx.lineTo(fx2+20,0);ctx.fill();}
+  ctx.globalAlpha=1;
   // Chopper
-  if(chopperObj){
-    ctx.save();
-    ctx.translate(chopperObj.x-cx, chopperObj.y);
-    ctx.scale(2.5,2.5);
-    ctx.drawImage(tex.chopper, -20, -9);
-    ctx.restore();
-  }
-
-  // Explosions
-  explosions.forEach(ex => {
-    const progress = ex.t / ex.maxT;
-    const scale = 1 + progress * 2;
-    ctx.globalAlpha = 1 - progress;
-    ctx.drawImage(tex.boom, ex.x-cx-16*scale/2, ex.y-16*scale/2, 32*scale, 32*scale);
-    ctx.globalAlpha = 1;
-  });
-
-  // HUD
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(4, 4, 180, 42);
-  ctx.font = '7px "Press Start 2P", monospace';
-  ctx.fillStyle = '#fcfcfc';
-  ctx.fillText(`HP:${bill.hp}/${bill.maxHp}  LIVES:${lives}`, 8, 14);
-  ctx.fillText(`WPN:${bill.weapon==='default'?'RIFLE':bill.weapon}  GRN:${bill.grenadeStock}`, 8, 26);
-  ctx.fillText(`SCORE:${score}`, 8, 38);
-
-  // Zone label
-  const zone = ZONES.find(z => bill.x >= z.start && bill.x < z.end) || ZONES[2];
-  const zn = zone.name==='jungle'?'DEEP JUNGLE':zone.name==='riverbank'?'RIVERBANK':'FORTRESS APPROACH';
-  ctx.fillStyle = '#000';
-  ctx.fillRect(GW/2-60, 4, 120, 14);
-  ctx.fillStyle = '#fcd848';
-  ctx.textAlign = 'center';
-  ctx.fillText(zn, GW/2, 14);
-  ctx.textAlign = 'left';
-
+  if(chopperObj){ctx.save();ctx.translate(chopperObj.x-cx,chopperObj.y);ctx.scale(2.5,2.5);ctx.drawImage(tex.chopper,-20,-9);ctx.restore();}
+  // Explosions with sparks
+  explosions.forEach(ex=>{const pr=ex.t/ex.maxT,sc2=1+pr*2.5;ctx.globalAlpha=1-pr;
+    ctx.drawImage(tex.boom,ex.x-cx-16*sc2/2,ex.y-16*sc2/2,32*sc2,32*sc2);
+    if(pr<0.5){for(let s=0;s<3;s++){const sa2=s*2.1+ex.x*0.1,sd=pr*25+5;
+      ctx.drawImage(tex.spark,ex.x-cx+Math.cos(sa2)*sd-3,ex.y+Math.sin(sa2)*sd-3);}}ctx.globalAlpha=1;});
+  // Zone tint
+  ctx.fillStyle=tintColor;ctx.fillRect(0,0,GW,GH);
+  // HUD: military tactical bar
+  ctx.fillStyle='rgba(0,0,0,0.75)';ctx.fillRect(0,0,GW,16);
+  ctx.fillStyle='rgba(60,192,72,0.12)';ctx.fillRect(0,15,GW,1);
+  ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillStyle='#888';ctx.fillText('HP',6,10);
+  for(let i=0;i<bill.maxHp;i++){const hpx=22+i*12;
+    ctx.fillStyle=i<bill.hp?(bill.hp>bill.maxHp*0.5?'#3cc048':bill.hp>bill.maxHp*0.25?'#e0c030':'#e03030'):'#222';
+    ctx.fillRect(hpx,4,10,8);ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.strokeRect(hpx,4,10,8);}
+  ctx.fillStyle='#e6c84a';ctx.fillText('WPN:'+(bill.weapon==='default'?'RFL':bill.weapon),120,10);
+  ctx.fillStyle='#3cc048';ctx.fillText('GRN:'+bill.grenadeStock,175,10);
+  ctx.fillStyle='#e8e2d4';ctx.fillText('x'+lives,220,10);
+  ctx.textAlign='right';ctx.fillStyle='#e6c84a';ctx.fillText('SCORE:'+score,GW-6,10);
+  const zn=zone.name==='jungle'?'DEEP JUNGLE':zone.name==='riverbank'?'RIVERBANK':'FORTRESS';
+  ctx.textAlign='center';ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='4px "Press Start 2P",monospace';
+  ctx.fillText(zn,GW/2,10);ctx.textAlign='left';
   ctx.restore();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TITLE / MENU SCENES
-// ═══════════════════════════════════════════════════════════════
-let menuSel = 1;
-let titleBgmStarted = false;
-let titlePhase = 'splash';
-let charSel = 0;
-let preludeStart = 0;
-let stageStart = 0;
-
-const CHARACTERS = [
-  { name:'KANE', title:'THE COMMANDER', color:'#e6c84a',
-    desc:'Cold. Precise. Leads from the front.',
-    stats:{POWER:4,SPEED:3,ARMOR:4,RANGE:3},
-    quote:'"We go in together."' },
-  { name:'VIPER', title:'THE GHOST', color:'#3cc048',
-    desc:'No record. No past. Moves like smoke.',
-    stats:{POWER:3,SPEED:5,ARMOR:2,RANGE:4},
-    quote:'"I need a door."' },
-  { name:'IRONSIDE', title:'THE WALL', color:'#d94236',
-    desc:'Heavy weapons. Heavy scars. Personal.',
-    stats:{POWER:5,SPEED:2,ARMOR:5,RANGE:3},
-    quote:'"I\'ll make it smaller."' },
-];
-
-const LOGO_GLYPHS = {
-  B:['1111111100','1111111110','1110000111','1110000111','1110001110','1111111100','1111111110','1110000111','1110000111','1110000111','1111111110','1111111100'],
-  R:['1111111100','1111111110','1110000111','1110000111','1110001110','1111111100','1111111000','1110111000','1110011100','1110001110','1110000111','1110000111'],
-  E:['1111111111','1111111111','1110000000','1110000000','1110000000','1111111100','1111111100','1110000000','1110000000','1110000000','1111111111','1111111111'],
-  A:['0011111100','0111111110','1110000111','1110000111','1110000111','1110000111','1111111111','1111111111','1110000111','1110000111','1110000111','1110000111'],
-  C:['0011111111','0111111111','1110000000','1110000000','1110000000','1110000000','1110000000','1110000000','1110000000','1110000000','0111111111','0011111111'],
-  H:['1110000111','1110000111','1110000111','1110000111','1110000111','1111111111','1111111111','1110000111','1110000111','1110000111','1110000111','1110000111'],
-};
 
 function drawNESLogo(cx,cy,scale){
   const COLS=10,ROWS=12,PX=scale||3,GAP=1;
@@ -1648,20 +1548,21 @@ function updateTitle(){
 // GAME OVER
 // ═══════════════════════════════════════════════════════════════
 function renderGameOver(){
-  ctx.save(); ctx.scale(SCALE,SCALE);
-  ctx.fillStyle='#000'; ctx.fillRect(0,0,GW,GH);
-  ctx.font='22px "Press Start 2P",monospace';
-  ctx.fillStyle='#fc3030'; ctx.textAlign='center';
-  ctx.fillText('GAME OVER', GW/2, 90);
-  ctx.font='9px "Press Start 2P",monospace';
-  ctx.fillStyle='#fcd848';
-  ctx.fillText(`PROGRESS: ${Math.floor(bill.x/LEVEL_W*100)}%`, GW/2, 130);
-  ctx.fillText(`KILLS: ${bill.kills}   SCORE: ${score}`, GW/2, 150);
-  ctx.fillStyle='#fcfcfc'; ctx.font='10px "Press Start 2P",monospace';
-  ctx.fillText('ENTER - RETRY', GW/2, 200);
-  ctx.fillStyle='#888';
-  ctx.fillText('ESC - TITLE', GW/2, 225);
-  ctx.textAlign='left'; ctx.restore();
+  ctx.save();ctx.scale(SCALE,SCALE);
+  ctx.fillStyle='#080000';ctx.fillRect(0,0,GW,GH);
+  const vg=ctx.createRadialGradient(GW/2,GH/2,40,GW/2,GH/2,GW/2);
+  vg.addColorStop(0,'rgba(40,0,0,0)');vg.addColorStop(1,'rgba(60,0,0,0.8)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,GW,GH);drawScanlines();
+  drawNESLogo(GW/2,40,1.5);
+  ctx.textAlign='center';ctx.font='18px "Press Start 2P",monospace';ctx.fillStyle='#d94236';
+  ctx.fillText('MISSION FAILED',GW/2,100);
+  ctx.font='7px "Press Start 2P",monospace';ctx.fillStyle='#e6c84a';
+  ctx.fillText('PROGRESS: '+Math.floor(bill.x/LEVEL_W*100)+'%',GW/2,135);
+  ctx.fillText('KILLS: '+bill.kills+'   SCORE: '+score,GW/2,152);
+  ctx.fillStyle='#e8e2d4';ctx.font='8px "Press Start 2P",monospace';
+  if(Math.floor(gameTime/500)%2===0)ctx.fillText('ENTER - RETRY',GW/2,195);
+  ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='6px "Press Start 2P",monospace';
+  ctx.fillText('ESC - TITLE',GW/2,220);ctx.textAlign='left';ctx.restore();
 }
 
 function updateGameOver(){
@@ -1673,24 +1574,22 @@ function updateGameOver(){
 // STAGE CLEAR
 // ═══════════════════════════════════════════════════════════════
 function renderStageClear(){
-  ctx.save(); ctx.scale(SCALE,SCALE);
-  ctx.fillStyle='#001808'; ctx.fillRect(0,0,GW,GH);
-  ctx.font='18px "Press Start 2P",monospace';
-  ctx.fillStyle='#fcd848'; ctx.textAlign='center';
-  ctx.fillText('JUNGLE BREACH CLEAR!', GW/2, 70);
-  ctx.font='9px "Press Start 2P",monospace';
-  ctx.fillStyle='#3cc048';
-  ctx.fillText('THE PERIMETER IS BREACHED.', GW/2, 110);
-  ctx.fillText('CRIMSON DAWN BASE IS AHEAD.', GW/2, 130);
-  ctx.fillStyle='#fcd848';
-  ctx.fillText(`FINAL SCORE: ${score}`, GW/2, 165);
-  ctx.fillStyle='#fc3030'; ctx.font='10px "Press Start 2P",monospace';
-  ctx.fillText('NEXT: STAGE 2 - THE CORRIDOR', GW/2, 200);
-  ctx.fillStyle='#888'; ctx.font='8px "Press Start 2P",monospace';
-  ctx.fillText('(COMING SOON)', GW/2, 220);
-  ctx.fillStyle='#fcfcfc'; ctx.font='10px "Press Start 2P",monospace';
-  ctx.fillText('ENTER - TITLE', GW/2, 260);
-  ctx.textAlign='left'; ctx.restore();
+  ctx.save();ctx.scale(SCALE,SCALE);
+  ctx.fillStyle='#001808';ctx.fillRect(0,0,GW,GH);drawScanlines();
+  ctx.fillStyle='#e6c84a';ctx.fillRect(0,30,GW,40);ctx.fillStyle='#000';
+  ctx.textAlign='center';ctx.font='14px "Press Start 2P",monospace';ctx.fillText('STAGE CLEAR',GW/2,56);
+  ctx.font='8px "Press Start 2P",monospace';ctx.fillStyle='#3cc048';
+  ctx.fillText('JUNGLE BREACH COMPLETE',GW/2,95);
+  ctx.fillStyle='rgba(232,226,212,0.5)';ctx.font='6px "Press Start 2P",monospace';
+  ctx.fillText('THE PERIMETER IS BREACHED.',GW/2,120);ctx.fillText('CRIMSON DAWN BASE IS AHEAD.',GW/2,135);
+  ctx.fillStyle='#e6c84a';ctx.font='7px "Press Start 2P",monospace';
+  ctx.fillText('KILLS: '+bill.kills,GW/2,165);ctx.fillText('FINAL SCORE: '+score,GW/2,182);
+  ctx.fillStyle='#d94236';ctx.font='8px "Press Start 2P",monospace';
+  ctx.fillText('NEXT: STAGE 2 - THE CORRIDOR',GW/2,215);
+  ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='6px "Press Start 2P",monospace';ctx.fillText('(COMING SOON)',GW/2,232);
+  ctx.fillStyle='#e8e2d4';ctx.font='7px "Press Start 2P",monospace';
+  if(Math.floor(gameTime/500)%2===0)ctx.fillText('ENTER - TITLE',GW/2,260);
+  ctx.textAlign='left';ctx.restore();
 }
 
 function updateStageClear(){
