@@ -17,7 +17,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 <div id="loading">LOADING...</div>
 <canvas id="game" width="1024" height="576"></canvas>
 <div class="hint">
-<b>ARROWS</b> MOVE / AIM &middot; <b>SPACE</b> JUMP &middot; <b>DOWN</b> PRONE &middot; <b>X</b> SHOOT &middot; <b>C</b> GRENADE &middot; <b>ENTER</b> ADVANCE
+<b>ARROWS</b> MOVE / AIM &middot; <b>SPACE</b> JUMP &middot; <b>DOWN</b> PRONE &middot; <b>X</b> SHOOT &middot; <b>C</b> GRENADE &middot; <b>H</b> HELP &middot; <b>ENTER</b> ADVANCE
 </div>
 <div class="ode">BUILT BY PRAXIS, AN ODE TO CONTRA AND OTHER RETRO GAMES</div>
 <script>
@@ -449,37 +449,50 @@ function initGame(){
   // 1UP
   crates.push({ x:2000-8, y:GROUND_Y-12, w:16, h:12, alive:true, weapon:'1UP', tex:tex.oneup });
 
-  // Fixed enemies — ground turrets near platforms, tanks
+  // Fixed enemies — ground turrets, platform turrets (270° threat), tanks
   enemies = [];
   [
-    // Jungle zone — ground turrets spaced along the path
+    // Jungle zone — ground + elevated turrets
     {x:500, t:'turret'},
+    {x:585, t:'turret', py:120},       // HIGH platform — shoots down
     {x:780, t:'turret'},
+    {x:925, t:'turret', py:140},       // MID platform
+    {x:1075, t:'turret', py:110},      // HIGH platform — shoots down
     {x:1150, t:'turret'},
     {x:1350, t:'turret'},
+    {x:1565, t:'turret', py:130},      // MID platform
     {x:1700, t:'turret'},
+    {x:1905, t:'turret', py:125},      // HIGH platform — shoots down
     {x:2000, t:'turret'},
+    {x:2195, t:'turret', py:155},      // MID platform
     {x:2400, t:'turret'},
+    {x:2505, t:'turret', py:140},      // MID platform
     {x:2750, t:'turret'},
-    // Riverbank zone — heavier defenses
+    // Riverbank zone — heavier, more elevated
     {x:3000, t:'turret'},
     {x:3150, t:'turret'},
     {x:3400, t:'turret'},
     {x:3500, t:'tank'},
+    {x:3525, t:'turret', py:160},      // LOW platform
     {x:3700, t:'turret'},
     {x:3950, t:'turret'},
+    {x:4095, t:'turret', py:90},       // HIGHEST platform — extreme angle
     {x:4200, t:'turret'},
+    {x:4315, t:'turret', py:160},      // MID platform
     {x:4500, t:'turret'},
-    // Fortress zone — maximum density
+    {x:4655, t:'turret', py:120},      // HIGH platform
+    // Fortress zone — maximum density, elevated crossfire
     {x:4800, t:'turret'},
     {x:5000, t:'turret'},
     {x:5100, t:'tank'},
+    {x:5185, t:'turret', py:120},      // HIGH platform — crossfire
     {x:5300, t:'turret'},
+    {x:5425, t:'turret', py:110},      // HIGH platform
     {x:5500, t:'turret'},
     {x:5770, t:'turret'},
     {x:5900, t:'turret'},
   ].forEach(s => {
-    spawnFixedEnemy(s.x, s.t);
+    spawnFixedEnemy(s.x, s.t, s.py);
   });
 }
 
