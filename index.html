@@ -17,7 +17,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 <div id="loading">LOADING...</div>
 <canvas id="game" width="1024" height="576"></canvas>
 <div class="hint">
-<b>ARROWS</b> MOVE / AIM &middot; <b>SPACE</b> JUMP &middot; <b>DOWN</b> PRONE &middot; <b>X</b> SHOOT &middot; <b>C</b> GRENADE &middot; <b>H</b> HELP &middot; <b>ENTER</b> ADVANCE
+<b>ARROWS</b> MOVE / AIM &middot; <b>UP</b> JUMP &middot; <b>SPACE</b> SHOOT &middot; <b>DOWN</b> PRONE &middot; <b>C</b> GRENADE &middot; <b>H</b> HELP &middot; <b>ENTER</b> ADVANCE
 </div>
 <div class="ode">BUILT BY PRAXIS, AN ODE TO CONTRA AND OTHER RETRO GAMES</div>
 <script>
@@ -635,9 +635,9 @@ function updateBill(dt){
   // Water detection
   b.inWater = isInWater(b.x + b.w/2, b.y + b.h);
 
-  // Drop through platform: pressing DOWN+JUMP while on platform
+  // Drop through platform: pressing DOWN+UP while on platform
   b.dropThrough = false;
-  if(b.onPlatform && kp('ArrowDown') && justPressed('Space') && !b.inWater){
+  if(b.onPlatform && kp('ArrowDown') && justPressed('ArrowUp') && !b.inWater){
     b.dropThrough = true;
     b.onPlatform = false;
     b.grounded = false;
@@ -654,15 +654,15 @@ function updateBill(dt){
     if(kp('ArrowRight')){ b.vx = BILL_SPEED; b.facing = 1; }
   }
 
-  // Aim
+  // Aim — UP aims up (works while grounded or airborne)
   if(b.isProne){ b.aimX=b.facing; b.aimY=0; }
   else if(kp('ArrowUp') && (kp('ArrowLeft')||kp('ArrowRight'))){ b.aimX=b.facing*0.707; b.aimY=-0.707; }
   else if(kp('ArrowUp')){ b.aimX=0; b.aimY=-1; }
   else if(!b.grounded && kp('ArrowDown')){ b.aimX=b.facing*0.707; b.aimY=0.707; }
   else { b.aimX=b.facing; b.aimY=0; }
 
-  // Jump
-  if(justPressed('Space')) b.jumpBufferedAt = now;
+  // Jump — UP key (only triggers on first press, not while held for aiming)
+  if(justPressed('ArrowUp')) b.jumpBufferedAt = now;
   const canCoyote = (now - b.lastGroundedAt) <= COYOTE_MS;
   const jumpQueued = (now - b.jumpBufferedAt) <= JUMP_BUFFER_MS;
   if(jumpQueued && canCoyote && !b.isProne){
@@ -671,8 +671,8 @@ function updateBill(dt){
     b.airStart = gameTime;
     sfx.jump();
   }
-  // Variable jump height
-  if(!kp('Space') && b.vy < -2) b.vy *= 0.8;
+  // Variable jump height — release UP to cut jump short
+  if(!kp('ArrowUp') && b.vy < -2) b.vy *= 0.8;
 
   // Gravity
   b.vy += GRAVITY;
@@ -700,8 +700,8 @@ function updateBill(dt){
     b.x = FORTRESS_X - b.w;
   }
 
-  // Shooting
-  if(kp('KeyX')){
+  // Shooting — SPACE key (also X as alternative)
+  if(kp('Space') || kp('KeyX')){
     const rate = b.weapon==='R'?80:b.weapon==='M'?90:b.weapon==='S'?180:160;
     if(now - b.lastShotAt >= rate){
       fireBullet(); b.lastShotAt = now;
@@ -924,9 +924,10 @@ function updateEnemies(){
       e.x += e.vx; e.y += e.vy;
       const gy = getGroundY(e.x+e.w/2);
       if(e.y+e.h >= gy){ e.y=gy-e.h; e.vy=0; }
-      // Shooting
+      // Shooting — only when enemy is visible on screen
+      const onScreen = e.x > camera.x - 20 && e.x < camera.x + GW + 20;
       const shotInterval = e.type==='sniper' ? diff.shotMs*0.5 : diff.shotMs;
-      if(dist < 400 && gameTime-e.lastShot > shotInterval){
+      if(onScreen && dist < 400 && gameTime-e.lastShot > shotInterval){
         e.lastShot = gameTime;
         const ang = Math.atan2(bill.y+20-e.y-16, bill.x+7-e.x-11);
         enemyBullets.push({
@@ -950,8 +951,9 @@ function updateEnemies(){
         const rise = e.h / 30; // rise full height in ~30 frames (500ms)
         e.y = Math.max(e.targetY, e.y - rise);
       }
-      // Only shoot once fully popped up
-      if(e.revealed && e.y <= e.targetY + 2 && dist < 350 && gameTime-e.lastShot > diff.shotMs*1.2){
+      // Only shoot once fully popped up AND visible on screen
+      const turretOnScreen = e.x > camera.x - 20 && e.x < camera.x + GW + 20;
+      if(turretOnScreen && e.revealed && e.y <= e.targetY + 2 && dist < 350 && gameTime-e.lastShot > diff.shotMs*1.2){
         e.lastShot=gameTime;
         const ang=Math.atan2(bill.y+20-(e.y+e.h/2), bill.x+7-(e.x+e.w/2));
         enemyBullets.push({x:e.x+e.w/2,y:e.y+e.h/3,vx:Math.cos(ang)*ENEMY_BULLET_SPEED*diff.bulletMul,
@@ -960,7 +962,8 @@ function updateEnemies(){
     }
     // Tanks
     else if(e.type==='tank'){
-      if(dist < 400 && gameTime-e.lastShot > 2000){
+      const tankOnScreen = e.x > camera.x - 20 && e.x < camera.x + GW + 20;
+      if(tankOnScreen && dist < 400 && gameTime-e.lastShot > 2000){
         e.lastShot=gameTime;
         const ang=Math.atan2(bill.y+20-e.y-14,bill.x+7-e.x-20);
         enemyBullets.push({x:e.x+20,y:e.y+8,vx:Math.cos(ang)*3*diff.bulletMul,
@@ -1138,7 +1141,9 @@ function checkBoss(){
   const diff = DIFFICULTY[diffKey];
   cannons.forEach(c => {
     if(!c.alive) return;
-    if(gameTime - c.lastShot > diff.shotMs*1.2){
+    // Only shoot when cannon is visible on screen
+    const cannonOnScreen = c.x > camera.x - 20 && c.x < camera.x + GW + 20;
+    if(cannonOnScreen && gameTime - c.lastShot > diff.shotMs*1.2){
       c.lastShot = gameTime;
       const ang = Math.atan2(bill.y+20-c.y, bill.x+7-c.x);
       enemyBullets.push({x:c.x,y:c.y,vx:Math.cos(ang)*2.5*diff.bulletMul,
@@ -1258,11 +1263,15 @@ function render(){
     ctx.fillStyle='#000';ctx.font='8px monospace';ctx.fillText(p.weapon,p.x-cx+2,p.y+10);});
   // Player + muzzle flash
   if(!bill.isDying||Math.floor(gameTime/80)%2===0){
-    const inv=gameTime<bill.invulnUntil&&Math.floor(gameTime/60)%2===0;
+    const isInvuln = gameTime < bill.invulnUntil;
+    const invBlink = isInvuln && Math.floor(gameTime/60)%2===0;
     // Prone: +18 Y offset. Same flip as standing (raw sprite faces RIGHT)
     const proneOffset = bill.isProne ? 18 : 0;
     const flipX = bill.facing < 0;
-    drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,inv?'#fff':null);
+    // Invulnerability: subtle alpha flicker instead of white flash
+    if(isInvuln) ctx.globalAlpha = invBlink ? 0.3 : 0.9;
+    drawBillFrame(bill.frame,bill.x+bill.w/2-cx,bill.y+bill.h/2+proneOffset,flipX,null);
+    ctx.globalAlpha = 1;
     if(gameTime-bill.lastShotAt<60){
       const mfx=bill.x+bill.w/2+bill.facing*30-cx,mfy=bill.y+(bill.isProne?36:22);
       ctx.globalAlpha=1-(gameTime-bill.lastShotAt)/60;
@@ -1706,10 +1715,10 @@ function renderHelp(){
   ctx.font='4px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
   const controls = [
     'ARROWS ............ MOVE / AIM',
-    'SPACE ............. JUMP',
+    'UP ................ JUMP + AIM UP',
+    'SPACE / X ......... SHOOT',
     'DOWN .............. PRONE (DODGE)',
-    'DOWN + SPACE ...... DROP PLATFORM',
-    'X ................. SHOOT',
+    'DOWN + UP ......... DROP PLATFORM',
     'C ................. GRENADE',
     'H ................. THIS SCREEN',
   ];
