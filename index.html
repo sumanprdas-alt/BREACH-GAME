@@ -10,7 +10,7 @@ canvas{image-rendering:pixelated;image-rendering:-moz-crisp-edges;box-shadow:0 0
 .hint{margin-top:14px;font-size:9px;color:#888;letter-spacing:1px;text-align:center;line-height:1.9}
 .hint b{color:#3cc048}
 #loading{color:#3cc048;font-size:10px}
-.ode{margin-top:8px;font-size:4px;color:#444;letter-spacing:1px;text-align:center}
+.ode{margin-top:22px;font-size:4px;color:#444;letter-spacing:1px;text-align:center}
 </style>
 </head>
 <body>
@@ -655,6 +655,7 @@ function updateBill(dt){
   if(jumpQueued && canCoyote && !b.isProne){
     b.vy = JUMP_POWER;
     b.jumpBufferedAt = -99999; b.lastGroundedAt = -99999;
+    b.airStart = gameTime;
     sfx.jump();
   }
   // Variable jump height
@@ -713,7 +714,11 @@ function updateBill(dt){
   } else if(b.isProne){
     b.frame = BILL_FRAMES.prone;
   } else if(!b.grounded){
-    b.frame = BILL_FRAMES.flip;
+    // Somersault: cycle through frames 28,29,30 during air time
+    const airTime = gameTime - b.airStart;
+    const flipFrames = [28,29,30];
+    const flipIdx = Math.floor(airTime / 80) % flipFrames.length;
+    b.frame = flipFrames[flipIdx];
   } else if(b.vx !== 0){
     b.runTimer += dt;
     if(b.runTimer > 100){ b.runTimer=0; b.runToggle=!b.runToggle; }
@@ -1332,6 +1337,7 @@ function render(){
   ctx.fillStyle='#3cc048';ctx.fillText('GRN:'+bill.grenadeStock,175,10);
   ctx.fillStyle='#e8e2d4';ctx.fillText('x'+lives,220,10);
   ctx.textAlign='right';ctx.fillStyle='#e6c84a';ctx.fillText('SCORE:'+score,GW-6,10);
+  ctx.fillStyle='rgba(232,226,212,0.3)';ctx.font='3px "Press Start 2P",monospace';ctx.fillText('H=HELP',GW-6,GH-4);
   const zn=zone.name==='jungle'?'DEEP JUNGLE':zone.name==='riverbank'?'RIVERBANK':'FORTRESS';
   ctx.textAlign='center';ctx.fillStyle='rgba(232,226,212,0.4)';ctx.font='4px "Press Start 2P",monospace';
   ctx.fillText(zn,GW/2,10);
@@ -1646,6 +1652,8 @@ function gameLoop(timestamp){
   switch(scene){
     case 'title': updateTitle(); renderTitle(); break;
     case 'play':
+      if(justPressed('KeyH')) showHelp = !showHelp;
+      if(showHelp){ render(); renderHelp(); break; }
       checkDeathTimer();
       updateBill(dt);
       updateBullets();
@@ -1667,6 +1675,60 @@ function gameLoop(timestamp){
   }
 
   requestAnimationFrame(gameLoop);
+}
+
+let showHelp = false;
+function renderHelp(){
+  ctx.save();ctx.scale(SCALE,SCALE);
+  // Dim background
+  ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(0,0,GW,GH);
+  ctx.textAlign='center';
+  // Title
+  ctx.font='8px "Press Start 2P",monospace';ctx.fillStyle='#e6c84a';
+  ctx.fillText('FIELD MANUAL',GW/2,20);
+  ctx.fillStyle='#d94236';ctx.fillRect(GW/2-80,24,160,1);
+  // Controls
+  ctx.font='5px "Press Start 2P",monospace';ctx.fillStyle='#3cc048';
+  ctx.fillText('CONTROLS',GW/2,40);
+  ctx.font='4px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
+  const controls = [
+    'ARROWS ............ MOVE / AIM',
+    'SPACE ............. JUMP',
+    'DOWN .............. PRONE (DODGE)',
+    'DOWN + SPACE ...... DROP PLATFORM',
+    'X ................. SHOOT',
+    'C ................. GRENADE',
+    'H ................. THIS SCREEN',
+  ];
+  controls.forEach((c,i)=>ctx.fillText(c,GW/2,52+i*10));
+  // Weapons
+  ctx.fillStyle='#3cc048';ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillText('WEAPON PICKUPS',GW/2,130);
+  ctx.font='4px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
+  const weapons = [
+    'M = MACHINE GUN    (FAST FIRE)',
+    'S = SPREAD SHOT    (5-WAY FAN)',
+    'R = RAPID FIRE     (FASTEST)',
+    'F = FIREBALL       (HIGH DAMAGE)',
+    'G = GRENADE REFILL (+3 GRENADES)',
+  ];
+  weapons.forEach((w,i)=>ctx.fillText(w,GW/2,142+i*10));
+  // Scoring
+  ctx.fillStyle='#3cc048';ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillText('SCORING',GW/2,202);
+  ctx.font='4px "Press Start 2P",monospace';ctx.fillStyle='#e8e2d4';
+  const scoring = [
+    'ENEMY KILL .............. 100 PTS',
+    'BOSS CANNON ............. 300 PTS',
+    'BOSS CORE ............... 1000 PTS',
+    'STAGE CLEAR ............. 5000 PTS',
+    'EXTRA LIFE .......... 1UP PICKUP',
+  ];
+  scoring.forEach((s,i)=>ctx.fillText(s,GW/2,214+i*10));
+  // Footer
+  ctx.fillStyle='#e6c84a';ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillText('PRESS H TO CLOSE',GW/2,GH-10);
+  ctx.textAlign='left';ctx.restore();
 }
 
 // ═══════════════════════════════════════════════════════════════
