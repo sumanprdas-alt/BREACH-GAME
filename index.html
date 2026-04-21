@@ -52,9 +52,9 @@ const GROUND_Y = 216;
 const BRIDGE_X = 3200, BRIDGE_W = 200;
 let FORTRESS_X = 6100;
 const GRAVITY = 0.6, MAX_FALL = 10;
-const BILL_SPEED = 2.0, JUMP_POWER = -8.5;
+const BILL_SPEED = 1.6, JUMP_POWER = -8.5;
 const BULLET_SPEED = 7;
-const ENEMY_SPEED = 1.2, ENEMY_BULLET_SPEED = 2.5;
+const ENEMY_SPEED = 0.95, ENEMY_BULLET_SPEED = 2.5;
 const WAVE_INTERVAL = 2200;
 const COYOTE_MS = 90, JUMP_BUFFER_MS = 120;
 
@@ -821,7 +821,7 @@ function updateBill(dt){
   b.y += b.vy;
 
   // Clamp to level bounds — but allow passing right edge after fortress opens
-  if(currentStage===2){S2_CONVEYORS.forEach(cv=>{if(b.x+b.w>cv.x&&b.x<cv.x+cv.w&&b.grounded)b.x+=cv.dir*0.8;});}
+  if(currentStage===2){S2_CONVEYORS.forEach(cv=>{if(b.x+b.w>cv.x&&b.x<cv.x+cv.w&&b.grounded)b.x+=cv.dir*0.6;});}
   if(b.x < 0) b.x = 0;
   if(!fortressOpen && b.x > LEVEL_W - b.w) b.x = LEVEL_W - b.w;
   if(fortressOpen && b.x > LEVEL_W + 100){

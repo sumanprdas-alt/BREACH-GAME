@@ -157,7 +157,7 @@ Splash → Difficulty → Character Select → Story Prelude → Stage Briefing 
 - Master volume: 0.35
 
 ## Player Movement (LOCKED)
-- BILL_SPEED = 2.0, JUMP_POWER = -8.5 (max jump ~60px)
+- BILL_SPEED = 1.6, JUMP_POWER = -8.5 (max jump ~60px)
 - Variable jump: releasing UP cuts jump short
 - Gravity: 0.6, MAX_FALL: 8
 

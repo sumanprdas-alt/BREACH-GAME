@@ -12,13 +12,22 @@
 - Assets embedded as base64. Audio synthesized via Web Audio API.
 - Always iterate on previous version. Never rebuild from scratch.
 
-## Two-file workflow (Stage 2 development)
-- **`index.html`** — production build, `currentStage=1`. Committed to repo.
-- **`breach-s2-wip.html`** — Stage 2 testing, `currentStage=2`. Local only, NOT in repo.
-- Both files are identical except the `currentStage` variable.
-- Always edit the WIP file during development. Copy to `index.html` and set `currentStage=1` before committing.
-- **NEVER commit with `currentStage=2`.**
-- Read `stage-2-rationale.md` before changing any numbers — every value has documented reasoning.
+## Two-file workflow (CRITICAL)
+
+Both files contain the SAME codebase. The ONLY difference is one variable:
+
+| File | `currentStage` | Purpose | Location |
+|------|---------------|---------|----------|
+| `index.html` | `1` | Production build. Plays Stage 1. Stage 2 code present but gated. | GitHub repo |
+| `breach-s2-wip.html` | `2` | Stage 2 testing. Jumps straight to corridor. | Local / outputs only |
+
+**Workflow:**
+1. Always edit `breach-s2-wip.html` during Stage 2 development
+2. Test with `currentStage=2`
+3. To commit: copy WIP → `index.html`, set `currentStage=1`, push
+4. **NEVER commit with `currentStage=2`** — production always starts at Stage 1
+
+**Baseline commit:** `5da0d90` — Stage 1 production + Stage 2 gated code (Phase A+B + difficulty rebalance)
 
 ## Engine architecture
 - `requestAnimationFrame` loop with `ctx.drawImage()`
@@ -31,24 +40,6 @@
 ```
 Splash → Difficulty Select → Character Select → Story Prelude → Stage Briefing → Play → GameOver/StageClear
 ```
-
-## Difficulty (REBALANCED — 60% novice / 30% amateur / 10% expert)
-
-| Property | Easy | Normal | Hard |
-|----------|------|--------|------|
-| HP | 9 | 6 | 3 |
-| Lives | 5 | 4 | 2 |
-| Shot interval (ms) | 4500 | 3000 | 1800 |
-| Invulnerability (ms) | 4000 | 2800 | 1500 |
-| Bullet speed mul | 0.35 | 0.55 | 0.9 |
-| Enemy speed mul | 0.5 | 0.75 | 1.1 |
-| Enemy density | 0.35 | 0.6 | 1.0 |
-| Crawler speed | 0.6 | 0.9 | 1.2 |
-| Laser off bonus (ms) | 800 | 400 | 0 |
-| Steam cycle bonus (ms) | 1200 | 500 | 0 |
-| Blackout crawlers | 3 | 5 | 7 |
-
-**All properties are wired in.** `crawlerSpeed` scales crawler chase speed. `laserOffBonus` adds extra off-time to laser gates. `steamCycleBonus` adds extra cooldown to steam vents. `blackoutCrawlers` controls how many crawlers spawn during the blackout event. `enemyDensity` controls what fraction of fixed enemies and crawler swarm counts actually spawn.
 
 ## Sprite conventions
 
@@ -70,6 +61,24 @@ Splash → Difficulty Select → Character Select → Story Prelude → Stage Br
 - ALL enemies check viewport before firing (no off-screen shots)
 - Turrets only solid after revealed/popped up
 
+## Difficulty (REBALANCED — tuned for 60% novice / 30% amateur / 10% expert)
+
+| Property | Easy | Normal | Hard |
+|----------|------|--------|------|
+| HP | 9 | 6 | 3 |
+| Lives | 5 | 4 | 2 |
+| Shot interval (ms) | 4500 | 3000 | 1800 |
+| Invulnerability (ms) | 4000 | 2800 | 1500 |
+| Bullet speed mul | 0.35 | 0.55 | 0.9 |
+| Enemy speed mul | 0.5 | 0.75 | 1.1 |
+| Enemy density | 0.35 | 0.6 | 1.0 |
+| Crawler speed | 0.6 | 0.9 | 1.2 |
+| Laser off bonus (ms) | 800 | 400 | 0 |
+| Steam cycle bonus (ms) | 1200 | 500 | 0 |
+| Blackout crawlers | 3 | 5 | 7 |
+
+**ALL properties are wired in and functional.** Earlier builds had `crawlerSpeed` and `laserOffBonus` defined but never used — now fixed. Read `stage-2-rationale.md` before changing any values.
+
 ## Stage 1 specifics (LOCKED)
 - 6400px, 3 zones, 21 platforms, 34 turrets + 2 tanks
 - Bridge + helicopter set-piece
@@ -77,30 +86,30 @@ Splash → Difficulty Select → Character Select → Story Prelude → Stage Br
 - Massive destruction sequence on boss defeat
 - BGM: War Drums (~125 BPM)
 
-## Stage 2 specifics (IN PROGRESS — ~55%)
+## Stage 2 specifics (IN PROGRESS — ~55% complete)
 - 7200px, 4 zones, CEIL_Y=30
 - Enclosed corridor: ceiling + floor + wall panels
-- Zone-dependent background palette (blue → purple → orange → red)
+- **Zone-dependent palette** — blue-gray → purple → orange/red → dark red
 - Metal grate platforms (gray, not green)
-- Hazards: 12 conveyor belts, 11 laser gates, 8 steam vents, 1 blackout event
-- Enemies: 22 ceiling turrets, 24 ground turrets + 5 tanks, 15 crawler spawn points, 15 energy orbs
-- All hazards/enemies difficulty-scaled via DIFFICULTY properties
+- **Hazards (all difficulty-scaled):** conveyor belts (12), laser gates (11), steam vents (8, Reactor only), blackout event (one-time at x=3200)
+- **Enemies:** ceiling turrets (22), ground turrets (24) + tanks (5), crawlers (15 spawn points), energy orbs (15)
 - Stage-dependent enemy spawning (Stage 1 enemies gated out)
 - Behind-spawning at 10% rate
 - Differentiated scoring per enemy type
-- SFX: steamHiss(), blackoutAlarm()
 - Environmental props gated to Stage 1 only
+- Reactor Core: glowing conduit pipes. Sentinel Chamber: emergency light strips.
+- SFX: `steamHiss()`, `blackoutAlarm()`
 
-### NOT yet built:
-- Alien Warrior enemy (3HP, charge+leap)
+### NOT built yet (~45% remaining):
+- Alien Warrior enemy (3HP, charges+leaps)
 - Shield Trooper enemy (2HP, frontal shield)
 - The Sentinel boss (3-phase mech)
 - Stage 2 BGM: Industrial Pulse (~140 BPM)
 - Stage 2 stage-clear screen text
-- End-of-level trigger via Sentinel boss defeat
+- End-of-level trigger (needs Sentinel boss defeat)
 
 ## Player movement (LOCKED)
-- BILL_SPEED = 2.0, JUMP_POWER = -8.5 (max jump ~60px)
+- BILL_SPEED = 1.6, JUMP_POWER = -8.5 (max jump ~60px)
 - Variable jump: releasing UP cuts jump short
 - Gravity: 0.6, MAX_FALL: 8
 - Somersault: frames 28→29→30 at 80ms/frame
@@ -127,9 +136,9 @@ Splash → Difficulty Select → Character Select → Story Prelude → Stage Br
 - Use gameTime-based timers
 - Gate stage-specific code with `if(currentStage===N)`
 - Test platform reachability (max 50px vertical gap between connected platforms)
-- Scale ALL hazards/enemies via DIFFICULTY properties
-- Read `stage-2-rationale.md` before changing numbers
-- Edit WIP file, copy to index.html with `currentStage=1` before committing
+- Scale all hazards/enemies by difficulty properties (density, speed, timing bonuses)
+- Edit `breach-s2-wip.html` during development, commit `index.html` with `currentStage=1`
+- Read `stage-2-rationale.md` before changing any placement numbers
 
 **DON'T:**
 - Use Phaser or physics engines
@@ -139,5 +148,5 @@ Splash → Difficulty Select → Character Select → Story Prelude → Stage Br
 - Let enemies fire from off-screen
 - Make platforms unreachable (check jump height vs platform Y)
 - Rebuild from scratch
-- Hardcode difficulty values — always use `diff.propertyName`
 - Commit with `currentStage=2`
+- Hardcode difficulty-dependent values (always use `DIFFICULTY[diffKey]` properties)
