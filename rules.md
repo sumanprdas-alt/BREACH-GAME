@@ -12,127 +12,132 @@
 - Assets embedded as base64. Audio synthesized via Web Audio API.
 - Always iterate on previous version. Never rebuild from scratch.
 
+## Two-file workflow (Stage 2 development)
+- **`index.html`** — production build, `currentStage=1`. Committed to repo.
+- **`breach-s2-wip.html`** — Stage 2 testing, `currentStage=2`. Local only, NOT in repo.
+- Both files are identical except the `currentStage` variable.
+- Always edit the WIP file during development. Copy to `index.html` and set `currentStage=1` before committing.
+- **NEVER commit with `currentStage=2`.**
+- Read `stage-2-rationale.md` before changing any numbers — every value has documented reasoning.
+
 ## Engine architecture
 - `requestAnimationFrame` loop with `ctx.drawImage()`
 - Collision: `if(feetY >= groundY) { y = groundY - height }`
 - Viewport: 512×288 internal, 2× CSS scale. GROUND_Y = 216.
 - NO `source-atop` or composite operations.
-- Screen shake: `screenShake` variable, decremented each frame, applied as `ctx.translate()` in render.
+- Screen shake: `screenShake` variable, decremented each frame.
 
 ## Scene flow (LOCKED)
 ```
 Splash → Difficulty Select → Character Select → Story Prelude → Stage Briefing → Play → GameOver/StageClear
 ```
-- All pre-game screens are phases of the `title` scene (`titlePhase` variable)
-- Splash: branding only, PRESS START
-- Difficulty: EASY/NORMAL/HARD arrow select
-- Character Select: 3 panels with stat bars (POWER/SPEED/ARMOR/RANGE), LEFT/RIGHT, ESC to go back
-- Story Prelude: Star Wars crawl (scrolls bottom→top), auto-advances after blank pause
-- Stage Briefing: typewriter text, shows operative + difficulty, ENTER to deploy
-- BGM starts on title screen (War Drums)
+
+## Difficulty (REBALANCED — 60% novice / 30% amateur / 10% expert)
+
+| Property | Easy | Normal | Hard |
+|----------|------|--------|------|
+| HP | 9 | 6 | 3 |
+| Lives | 5 | 4 | 2 |
+| Shot interval (ms) | 4500 | 3000 | 1800 |
+| Invulnerability (ms) | 4000 | 2800 | 1500 |
+| Bullet speed mul | 0.35 | 0.55 | 0.9 |
+| Enemy speed mul | 0.5 | 0.75 | 1.1 |
+| Enemy density | 0.35 | 0.6 | 1.0 |
+| Crawler speed | 0.6 | 0.9 | 1.2 |
+| Laser off bonus (ms) | 800 | 400 | 0 |
+| Steam cycle bonus (ms) | 1200 | 500 | 0 |
+| Blackout crawlers | 3 | 5 | 7 |
+
+**All properties are wired in.** `crawlerSpeed` scales crawler chase speed. `laserOffBonus` adds extra off-time to laser gates. `steamCycleBonus` adds extra cooldown to steam vents. `blackoutCrawlers` controls how many crawlers spawn during the blackout event. `enemyDensity` controls what fraction of fixed enemies and crawler swarm counts actually spawn.
 
 ## Sprite conventions
 
 ### Character sheets (3 playable)
+924×340, 14×5 grid, 66×68 cells. Frame map: idle(5), run(1,3), aimUp(12), prone(31), flip(28-30).
 
-| Character | Sheet | Size | Grid | Cell |
-|-----------|-------|------|------|------|
-| Kane | `hamza_sheet_v2` | 924×340 | 14×5 | 66×68 |
-| Viper | `john_wick_sheet` | 924×340 | 14×5 | 66×68 |
-| Ironside | `tiger_sheet_v2` | 924×340 | 14×5 | 66×68 |
-
-- Frame N = row `Math.floor(N / 14)`, col `N % 14`
-- All use 66×68 cells (code uses bill sheet for sprite preview currently)
-
-### Frame map (shared)
-```
-idle: 5, run1: 1, run2: 3, aimUp: 12
-prone: 31 (head LEFT in raw sprite)
-flip: [28, 29, 30]
-```
-
-### Prone rules
-- Frame 31 with drawY += 18 offset
-- Facing RIGHT = flip sprite. Facing LEFT = raw.
-- Hitbox: {y+28, h:12}. NO physics body changes.
+### Prone rules (LOCKED)
+- Frame 31, drawY+=18, hitbox {y+28,h:12}
+- flipX = bill.facing < 0 (same as standing)
 
 ### Enemy sprites
-- Grunt sheet (36×40, 2 frames): clean transparency. Soldier, charger roles.
-- Charger: red headband overlay. Sniper: yellow headband.
-- NES turret sprites (35×32): from `nes_turret` asset, placed on ground AND platforms
-- All enemies face player via `ctx.scale(-1,1)`.
+- Grunt sheet (36×40, 2 frames). Charger=red headband. Sniper=yellow headband.
+- NES turret sprites (35×32). Ground AND platform AND ceiling (flipped for Stage 2).
+- Crawler sprite: embedded base64, pink alien facehugger.
+- Orb sprite: embedded base64, blue plasma sphere.
 
-### Enemy collision (LOCKED)
-- ALL enemies (including fixed turrets/tanks) are SOLID — player cannot walk through
-- Horizontal push-back collision when player overlaps vertically
-- Touch damage on contact for all enemy types (fixed and mobile)
-- Turrets only become solid after fully revealed/popped up
+## Enemy collision (LOCKED)
+- ALL enemies are SOLID — push-back + contact damage
+- ALL enemies check viewport before firing (no off-screen shots)
+- Turrets only solid after revealed/popped up
 
-## Terrain (LOCKED)
-- 21 multi-tier platforms organized into 20 sections
-- 2-3 tier stacked platforms for vertical traversal (jumping up/down between levels)
-- Close spacing (80-120px gaps), wider platforms (72-110px)
-- Double-tier bridges where high and low platforms overlap
+## Stage 1 specifics (LOCKED)
+- 6400px, 3 zones, 21 platforms, 34 turrets + 2 tanks
+- Bridge + helicopter set-piece
+- Fortress boss (4 cannons + 15HP core)
+- Massive destruction sequence on boss defeat
+- BGM: War Drums (~125 BPM)
 
-## Enemy spawning
-- 31 fixed turrets/tanks across the level
-- ~50% of turrets placed ON platforms at varied heights (start visible, no pop-up)
-- Ground turrets pop up when player within 200px
-- Platform turrets aim at player with Math.atan2 (shoot diagonally up/down)
-- Wave interval: 2200ms, up to 3 mobile enemies simultaneously
+## Stage 2 specifics (IN PROGRESS — ~55%)
+- 7200px, 4 zones, CEIL_Y=30
+- Enclosed corridor: ceiling + floor + wall panels
+- Zone-dependent background palette (blue → purple → orange → red)
+- Metal grate platforms (gray, not green)
+- Hazards: 12 conveyor belts, 11 laser gates, 8 steam vents, 1 blackout event
+- Enemies: 22 ceiling turrets, 24 ground turrets + 5 tanks, 15 crawler spawn points, 15 energy orbs
+- All hazards/enemies difficulty-scaled via DIFFICULTY properties
+- Stage-dependent enemy spawning (Stage 1 enemies gated out)
+- Behind-spawning at 10% rate
+- Differentiated scoring per enemy type
+- SFX: steamHiss(), blackoutAlarm()
+- Environmental props gated to Stage 1 only
 
-## Fortress destruction (LOCKED)
-- 3-second destruction sequence after boss core destroyed
-- 12 cascading explosion SFX calls (200ms spacing + random jitter)
-- 10 visual explosion bursts at 3.5× scale with orange flash
-- Wall splits into 4 chunks that rotate and fall with physics after 1.5s
-- 15 debris particles with gravity
-- 2.5s screen shake (6px intensity)
-- `fortressOpen = true` after 3s — wall disappears, player can walk through
-- Player walks off right edge (+100px past LEVEL_W) to trigger Stage Clear
-- Camera follows player past level boundary when fortress is open
+### NOT yet built:
+- Alien Warrior enemy (3HP, charge+leap)
+- Shield Trooper enemy (2HP, frontal shield)
+- The Sentinel boss (3-phase mech)
+- Stage 2 BGM: Industrial Pulse (~140 BPM)
+- Stage 2 stage-clear screen text
+- End-of-level trigger via Sentinel boss defeat
 
-## Logo (LOCKED)
-- NES pixel art letterforms (10×12 grid per letter, 3px scale)
-- Cream (#e8e2d4) letters with black drop shadow
-- Red strikethrough (#d94236) at crossbar row (row 6)
-- Center-aligned using `drawNESLogo(cx, cy, scale)`
+## Player movement (LOCKED)
+- BILL_SPEED = 2.0, JUMP_POWER = -8.5 (max jump ~60px)
+- Variable jump: releasing UP cuts jump short
+- Gravity: 0.6, MAX_FALL: 8
+- Somersault: frames 28→29→30 at 80ms/frame
 
 ## Sound (LOCKED — Hollywood v3)
-- All Web Audio API synthesis. Zero external files.
-- Core primitives: t(), sweep(), n(), nf(), kick(), dist(), d()
-- Every SFX: 2-5 simultaneous layers
-- **Weapon-specific sounds:** shoot() for basic/rapid, machineGun() for M, spreadShot() for S, fireball() for F
-- Grenade throw: t(440) + n()
-- Locked: Jump (150→400Hz), Death (NES staircase), Stage Clear (C5→C6 arpeggio)
-- BGM: War Drums — kick/snare/hi-hat + bass riff, 0.12s/step, starts on title screen
+- All Web Audio API. Zero external files.
+- Weapon-specific sounds per weapon type.
+- Stage 2 additions: steamHiss(), blackoutAlarm()
+- BGM starts on splash PRESS START.
 - Master volume: 0.35
 
 ## Exception handling (CRITICAL)
-- NEVER hardcode negative coordinates. Always: `y = groundY - spriteHeight`
-- All coordinate math clamped with `Math.max(0, ...)`
-- Validate sprite bounds before every `ctx.drawImage()`
+- NEVER hardcode negative coordinates
+- All coordinate math clamped with Math.max(0, ...)
+- Validate sprite bounds before every ctx.drawImage()
 - try/catch around all asset loading and rendering
 - Death/respawn: gameTime-based only, NEVER setTimeout
 - Array removals: iterate backwards
-- Protect against division by zero
 
 ## Do / Don't
 
 **DO:**
 - Show mockups before coding visuals
 - Use gameTime-based timers
-- Keep colors in locked palette families
-- Read cell height from character config
-- Start BGM on title screen
-- Reset titlePhase to 'splash' when returning to title
+- Gate stage-specific code with `if(currentStage===N)`
+- Test platform reachability (max 50px vertical gap between connected platforms)
+- Scale ALL hazards/enemies via DIFFICULTY properties
+- Read `stage-2-rationale.md` before changing numbers
+- Edit WIP file, copy to index.html with `currentStage=1` before committing
 
 **DON'T:**
 - Use Phaser or physics engines
 - Use `source-atop` composites
 - Use setTimeout for game logic
-- Use brown in rock palette
-- Put grass on walls/cliffs
-- Make rocks from small tiles
-- Hardcode negative coordinates
+- Spawn Stage 1 enemies in Stage 2 or vice versa
+- Let enemies fire from off-screen
+- Make platforms unreachable (check jump height vs platform Y)
 - Rebuild from scratch
+- Hardcode difficulty values — always use `diff.propertyName`
+- Commit with `currentStage=2`
